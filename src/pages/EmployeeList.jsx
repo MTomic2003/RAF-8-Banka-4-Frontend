@@ -4,7 +4,7 @@ import gsap                                    from 'gsap';
 import { useFetch }                            from '../hooks/useFetch';
 import { useDebounce }                         from '../hooks/useDebounce';
 import { employeesApi }                        from '../api/endpoints/employees';
-import { useAuthStore }                        from '../store/authStore';
+import { usePermissions }                       from '../hooks/usePermissions';
 import Navbar                                  from '../components/layout/Navbar';
 import Spinner                                 from '../components/ui/Spinner';
 import Alert                                   from '../components/ui/Alert';
@@ -15,7 +15,7 @@ import styles                                  from './EmployeeList.module.css';
 export default function EmployeeList() {
   const navigate = useNavigate();
   const pageRef  = useRef(null);
-  const user     = useAuthStore(s => s.user);
+  const { can }  = usePermissions();
 
   const [filters, setFilters] = useState({
     email:      '',
@@ -77,7 +77,7 @@ export default function EmployeeList() {
               <h1 className={styles.pageTitle}>Zaposleni</h1>
               <p className={styles.pageDesc}>Pregled i upravljanje listom zaposlenih.</p>
             </div>
-            {user?.is_admin && (
+            {can('employee.create') && (
               <Link to="/employees/new" className={styles.btnPrimary}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <line x1="12" y1="5" x2="12" y2="19"/>

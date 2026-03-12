@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect }  from 'react';
 import { NavLink, useNavigate }         from 'react-router-dom';
 import { useAuthStore }                 from '../../store/authStore';
+import { usePermissions }              from '../../hooks/usePermissions';
 import ChangePasswordModal              from './ChangePasswordModal';
 import styles                           from './Navbar.module.css';
 
@@ -8,6 +9,7 @@ export default function Navbar() {
   const navigate = useNavigate();
   const user     = useAuthStore(s => s.user);
   const logout   = useAuthStore(s => s.logout);
+  const { can, canAny } = usePermissions();
 
   const [showMenu,     setShowMenu]     = useState(false);
   const [showPwModal,  setShowPwModal]  = useState(false);
@@ -51,12 +53,14 @@ export default function Navbar() {
         </div>
 
         <div className={styles.nav}>
-          <NavLink
-            to="/employees"
-            className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
-          >
-            Zaposleni
-          </NavLink>
+          {can('employee.view') && (
+            <NavLink
+              to="/employees"
+              className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
+            >
+              Zaposleni
+            </NavLink>
+          )}
           <NavLink
             to="/clients"
             className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
@@ -66,7 +70,7 @@ export default function Navbar() {
         </div>
 
         <div className={styles.right}>
-          {user?.is_admin && (
+          {canAny('employee.create', 'employee.update', 'employee.delete') && (
             <span className={styles.adminBadge}>Administrator</span>
           )}
           <div className={styles.userDropdown} ref={menuRef}>

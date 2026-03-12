@@ -15,10 +15,9 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
-function AdminRoute({ children }) {
-
-  const user = useAuthStore(s => s.user);
-  if (!user?.is_admin) return <Navigate to="/" replace />;
+function PermissionRoute({ permission, children }) {
+  const permissions = useAuthStore(s => s.user?.permissions ?? []);
+  if (!permissions.includes(permission)) return <Navigate to="/" replace />;
   return children;
 }
 
@@ -30,19 +29,19 @@ export default function App() {
       <Routes>
         <Route path="/login"            element={<Login />} />
         <Route path="/reset-password"   element={<ResetPassword />} />
-        <Route path="/activation"       element={<AccountActivation />} />
+        <Route path="/activate"          element={<AccountActivation />} />
 
         <Route path="/" element={
           <ProtectedRoute><Dashboard /></ProtectedRoute>
         } />
         <Route path="/employees" element={
-          <ProtectedRoute><EmployeeList /></ProtectedRoute>
+          <ProtectedRoute><PermissionRoute permission="employee.view"><EmployeeList /></PermissionRoute></ProtectedRoute>
         } />
         <Route path="/employees/new" element={
-          <ProtectedRoute><AdminRoute><NewEmployee /></AdminRoute></ProtectedRoute>
+          <ProtectedRoute><PermissionRoute permission="employee.create"><NewEmployee /></PermissionRoute></ProtectedRoute>
         } />
         <Route path="/employees/:id" element={
-          <ProtectedRoute><EmployeeDetails /></ProtectedRoute>
+          <ProtectedRoute><PermissionRoute permission="employee.view"><EmployeeDetails /></PermissionRoute></ProtectedRoute>
         } />
 
         <Route path="*" element={<NotFound />} />

@@ -4,7 +4,7 @@ import gsap                                    from 'gsap';
 import { useFetch }                            from '../hooks/useFetch';
 import { employeesApi }                        from '../api/endpoints/employees';
 import { jeObavezno, jeValidanEmail, jeValidanTelefon } from '../utils/helpers';
-import { useAuthStore }                        from '../store/authStore';
+import { usePermissions }                       from '../hooks/usePermissions';
 import Navbar                                  from '../components/layout/Navbar';
 import Spinner                                 from '../components/ui/Spinner';
 import Alert                                   from '../components/ui/Alert';
@@ -16,7 +16,7 @@ export default function EmployeeDetails() {
   const { id }   = useParams();
   const navigate = useNavigate();
   const pageRef  = useRef(null);
-  const user     = useAuthStore(s => s.user);
+  const { can }  = usePermissions();
 
   const { data, loading, error, refetch } = useFetch(
     () => employeesApi.getById(id),
@@ -136,14 +136,18 @@ export default function EmployeeDetails() {
               <h1 className={styles.pageTitle}>{emp.first_name} {emp.last_name}</h1>
               <p className={styles.pageDesc}>ID Pozicije: {emp.position_id} — {emp.department}</p>
             </div>
-            {user?.is_admin && !editMode && (
+            {(can('employee.update') || can('employee.delete')) && !editMode && (
               <div className={styles.headerActions}>
-                <button className={styles.btnPrimary} onClick={startEdit}>
-                  Izmeni
-                </button>
-                <button className={styles.btnDanger} onClick={handleDelete}>
-                  Obriši
-                </button>
+                {can('employee.update') && (
+                  <button className={styles.btnPrimary} onClick={startEdit}>
+                    Izmeni
+                  </button>
+                )}
+                {can('employee.delete') && (
+                  <button className={styles.btnDanger} onClick={handleDelete}>
+                    Obriši
+                  </button>
+                )}
               </div>
             )}
           </div>

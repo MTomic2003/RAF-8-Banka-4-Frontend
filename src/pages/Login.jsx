@@ -34,7 +34,7 @@ export default function Login() {
     setSubmitting(true);
     try {
       const res = await authApi.login({ email, password });
-      setAuth(null, res.token);
+      setAuth(res.user, res.token, res.refresh_token);
       navigate('/');
     } catch (err) {
       setError(err.error ?? 'Pogrešan email ili lozinka. Proverite unos i pokušajte ponovo.');
