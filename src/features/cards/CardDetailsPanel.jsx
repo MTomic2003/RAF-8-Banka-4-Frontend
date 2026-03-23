@@ -2,9 +2,12 @@ import { useEffect, useState } from 'react';
 import Alert from '../../components/ui/Alert';
 import CardStatusTag from './CardStatusTag';
 import {
+  CARD_STATUS,
   formatDate,
   formatLimit,
   getAllowedActions,
+  getCardBrand,
+  maskCardNumber,
 } from '../../utils/cardHelpers';
 import styles from '../../pages/admin/CardsPage.module.css';
 
@@ -27,6 +30,8 @@ export default function CardDetailsPanel({
   }, [card]);
 
   const allowedActions = getAllowedActions(card.status, portalType);
+  const brand = getCardBrand(card.cardNumber);
+  const isDeactivated = card.status === CARD_STATUS.DEACTIVATED;
 
   function submitLimits(event) {
     event.preventDefault();
@@ -45,13 +50,13 @@ export default function CardDetailsPanel({
     }
 
     onSaveLimits(card.id, { daily_limit: daily, monthly_limit: monthly });
-    setMessage({ type: 'uspeh', text: 'Limiti su spremni za slanje ka backendu.' });
+    setMessage({ type: 'uspeh', text: 'Limiti kartice su uspešno ažurirani.' });
   }
 
   return (
     <section className={styles.detailsCardPage}>
       <div className={styles.detailsHeaderTop}>
-        <h2 className={styles.detailsPageTitle}>Card Details</h2>
+        <h2 className={styles.detailsPageTitle}>Detalji kartice</h2>
 
         <button
           type="button"
@@ -63,68 +68,78 @@ export default function CardDetailsPanel({
       </div>
 
       <div className={styles.detailsGrid}>
-        <InfoItem label="Card Name" value={`${card.type} kartica ${card.cardNumber.slice(-4)}`} />
-        <InfoItem label="Card Type" value={card.brand || 'MasterCard'} />
-        <InfoItem label="ID Card Number" value={card.cardNumber.slice(-4)} />
-        <InfoItem label="Type" value={card.type} />
-        <InfoItem label="Account Number" value={card.accountNumber} />
-        <InfoItem label="CVV Code" value="•••" />
-        <InfoItem label="Limit" value={`${formatLimit(card.limitTotal)} RSD`} />
+        <InfoItem label="Naziv kartice" value={`${card.type} kartica ${card.cardNumber.slice(-4)}`} />
+        <InfoItem label="Brend" value={brand?.label || card.brand || 'Kartica'} />
+        <InfoItem label="Broj kartice" value={maskCardNumber(card.cardNumber)} />
+        <InfoItem label="Tip" value={card.type} />
+        <InfoItem label="Povezani račun" value={`${card.accountName} — ${card.accountNumber}`} />
+        <InfoItem label="CVV" value="•••" />
+        <InfoItem label="Dnevni limit" value={`${formatLimit(card.limitDaily)} RSD`} />
+        <InfoItem label="Mesečni limit" value={`${formatLimit(card.limitMonthly)} RSD`} />
         <InfoItem label="Status" value={<CardStatusTag status={card.status} />} />
-        <InfoItem label="Creation Date" value={formatDate(card.createdAt)} />
-        <InfoItem label="Expiration Date" value={card.expiresAt} />
+        <InfoItem label="Datum kreiranja" value={formatDate(card.createdAt)} />
+        <InfoItem label="Datum isteka" value={card.expiresAt} />
+        <InfoItem label="Vlasnik" value={card.holderName} />
       </div>
 
       <div className={styles.sectionDivider} />
 
-      <div className={styles.optionSection}>
-        <h3 className={styles.optionTitle}>Options</h3>
+      {!isDeactivated && (
+        <div className={styles.optionSection}>
+          <h3 className={styles.optionTitle}>Opcije</h3>
 
-        <form className={styles.limitSection} onSubmit={submitLimits}>
-          {message && <Alert tip={message.type} poruka={message.text} />}
+          <form className={styles.limitSection} onSubmit={submitLimits}>
+            {message && <Alert tip={message.type} poruka={message.text} />}
 
-          <div className={styles.limitGrid}>
-            <label className={styles.field}>
-              <span>Dnevni limit</span>
-              <input
-                type="number"
-                min="0"
-                value={limits.daily}
-                onChange={(event) => setLimits((prev) => ({ ...prev, daily: event.target.value }))}
-              />
-            </label>
+            <div className={styles.limitGrid}>
+              <label className={styles.field}>
+                <span>Dnevni limit</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={limits.daily}
+                  onChange={(event) => setLimits((prev) => ({ ...prev, daily: event.target.value }))}
+                />
+              </label>
 
-            <label className={styles.field}>
-              <span>Mesečni limit</span>
-              <input
-                type="number"
-                min="0"
-                value={limits.monthly}
-                onChange={(event) => setLimits((prev) => ({ ...prev, monthly: event.target.value }))}
-              />
-            </label>
-          </div>
+              <label className={styles.field}>
+                <span>Mesečni limit</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={limits.monthly}
+                  onChange={(event) => setLimits((prev) => ({ ...prev, monthly: event.target.value }))}
+                />
+              </label>
+            </div>
 
-          <div className={styles.optionsList}>
-            <button type="submit" className={styles.optionButtonRow}>
-              <span>Promeni limit kartice</span>
-              <span>›</span>
-            </button>
-
-            {allowedActions.map((action) => (
-              <button
-                key={action.key}
-                type="button"
-                className={`${styles.optionButtonRow} ${action.tone === 'danger' ? styles.optionDanger : ''}`}
-                onClick={() => onAction(card.id, action.key)}
-              >
-                <span>{action.label}</span>
+            <div className={styles.optionsList}>
+              <button type="submit" className={styles.optionButtonRow}>
+                <span>Promeni limite kartice</span>
                 <span>›</span>
               </button>
-            ))}
-          </div>
-        </form>
-      </div>
+
+              {allowedActions.map((action) => (
+                <button
+                  key={action.key}
+                  type="button"
+                  className={`${styles.optionButtonRow} ${action.tone === 'danger' ? styles.optionDanger : ''}`}
+                  onClick={() => onAction(card.id, action.key)}
+                >
+                  <span>{action.label}</span>
+                  <span>›</span>
+                </button>
+              ))}
+            </div>
+          </form>
+        </div>
+      )}
+
+      {isDeactivated && (
+        <div style={{ padding: '12px 16px', background: 'var(--red-bg, #ffebee)', borderRadius: 'var(--radius)', fontSize: 13, color: 'var(--red)' }}>
+          Ova kartica je trajno deaktivirana i ne može se ponovo aktivirati.
+        </div>
+      )}
 
       <div className={styles.sectionDivider} />
 

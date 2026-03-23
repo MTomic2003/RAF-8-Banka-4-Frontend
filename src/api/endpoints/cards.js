@@ -11,6 +11,9 @@ export const cardsApi = {
   // Confirm card request with OTP code
   confirmRequest: (data) => api.post('/cards/request/confirm', data),
 
+  // Change card limits
+  changeLimits: (cardId, data) => api.put(`/cards/${cardId}/limits`, data),
+
   // Block/unblock/deactivate (backend uses PUT)
   block:      (cardId) => api.put(`/cards/${cardId}/block`),
   unblock:    (cardId) => api.put(`/cards/${cardId}/unblock`),

@@ -1,5 +1,25 @@
 import styles from './TransactionDetailsModal.module.css';
 
+function formatDateTime(dateStr) {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr);
+  if (isNaN(d)) return dateStr;
+  return d.toLocaleDateString('sr-RS', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    + ' ' + d.toLocaleTimeString('sr-RS', { hour: '2-digit', minute: '2-digit' });
+}
+
+const STATUS_LABELS = {
+  'completed': 'Realizovano',
+  'COMPLETED': 'Realizovano',
+  'processing': 'U obradi',
+  'pending': 'U obradi',
+  'PENDING': 'U obradi',
+  'failed': 'Odbijeno',
+  'rejected': 'Odbijeno',
+  'FAILED': 'Odbijeno',
+  'REJECTED': 'Odbijeno',
+};
+
 export default function TransactionDetailsModal({ transaction, onClose }) {
   if (!transaction) return null;
 
@@ -32,11 +52,11 @@ export default function TransactionDetailsModal({ transaction, onClose }) {
 
           <hr className={styles.divider} />
 
-          <div className={styles.infoRow}><span>Vreme izvršenja:</span><strong>{transaction.created_at ?? transaction.execution_timestamp ?? '—'}</strong></div>
+          <div className={styles.infoRow}><span>Vreme izvršenja:</span><strong>{formatDateTime(transaction.created_at ?? transaction.execution_timestamp)}</strong></div>
 
           <div className={styles.infoRow}>
             <span>Status:</span>
-            <span className={`${styles.badge} ${styles['badge' + (transaction.status ?? '').replace(/\s+/g, '')]}`}>{transaction.status ?? '—'}</span>
+            <span className={`${styles.badge} ${styles['badge' + (transaction.status ?? '').replace(/\s+/g, '')]}`}>{STATUS_LABELS[transaction.status] ?? transaction.status ?? '—'}</span>
           </div>
         </div>
 

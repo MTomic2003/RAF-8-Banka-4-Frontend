@@ -11,17 +11,18 @@ export const PORTAL_TYPE = {
 
 export function maskCardNumber(number = '') {
   const digits = String(number).replace(/\D/g, '');
-  if (digits.length <= 8) return digits;
-  return `${digits.slice(0, 4)}********${digits.slice(-4)}`;
+  if (!digits || digits.length < 8) return '••••••••••••••••';
+  const masked = digits.length - 8;
+  return `${digits.slice(0, 4)}${'*'.repeat(masked || 8)}${digits.slice(-4)}`;
 }
 
 export function formatCardNumberForUi(number = '') {
   const digits = String(number).replace(/\D/g, '');
   if (!digits) return '•••• •••• •••• ••••';
-  const masked = digits.length >= 16
-    ? `${digits.slice(0, 4)} ${digits.slice(4, 8).replace(/./g, '•')} ${digits.slice(8, 12).replace(/./g, '•')} ${digits.slice(12, 16)}`
-    : digits;
-  return masked;
+  if (digits.length >= 16) {
+    return `${digits.slice(0, 4)} **** **** ${digits.slice(-4)}`;
+  }
+  return digits;
 }
 
 export function getCardBrand(cardNumber = '') {
@@ -101,21 +102,31 @@ export function formatDate(value) {
   return new Intl.DateTimeFormat('sr-RS').format(date);
 }
 
+const STATUS_NORMALIZE = {
+  'ACTIVE': CARD_STATUS.ACTIVE,
+  'BLOCKED': CARD_STATUS.BLOCKED,
+  'DEACTIVATED': CARD_STATUS.DEACTIVATED,
+  [CARD_STATUS.ACTIVE]: CARD_STATUS.ACTIVE,
+  [CARD_STATUS.BLOCKED]: CARD_STATUS.BLOCKED,
+  [CARD_STATUS.DEACTIVATED]: CARD_STATUS.DEACTIVATED,
+};
+
 export function normalizeCard(apiCard) {
   return {
     id: apiCard.id,
     cardNumber: apiCard.card_number ?? apiCard.cardNumber ?? '',
-    holderName: apiCard.holder_name ?? apiCard.holderName ?? '',
-    expiresAt: apiCard.expiration_date ?? apiCard.expiresAt ?? '',
+    holderName: apiCard.holder_name ?? apiCard.holderName ?? apiCard.name ?? '',
+    expiresAt: apiCard.expires_at ?? apiCard.expiration_date ?? apiCard.expiresAt ?? '',
     createdAt: apiCard.creation_date ?? apiCard.createdAt ?? '',
+    brand: apiCard.card_brand ?? apiCard.brand ?? '',
     cvv: apiCard.cvv ?? '***',
-    type: apiCard.type ?? 'Debitna',
+    type: apiCard.card_type ?? apiCard.type ?? 'Debitna',
     accountName: apiCard.account_name ?? apiCard.accountName ?? 'Tekući račun',
     accountNumber: apiCard.account_number ?? apiCard.accountNumber ?? '',
     limitDaily: apiCard.limit_daily ?? apiCard.limitDaily ?? 0,
     limitMonthly: apiCard.limit_monthly ?? apiCard.limitMonthly ?? 0,
     limitTotal: apiCard.limit ?? apiCard.limitTotal ?? 0,
-    status: apiCard.status ?? CARD_STATUS.ACTIVE,
+    status: STATUS_NORMALIZE[apiCard.status] ?? apiCard.status ?? CARD_STATUS.ACTIVE,
     transactions: apiCard.transactions ?? [],
   };
 }

@@ -65,7 +65,7 @@ export default function CardsTable({ clients, onUnblockClick }) {
                     <CardStatusBadge status={card.status} />
                   </td>
                   <td>
-                    {card.status === 'BLOKIRANA' && (
+                    {(card.status === 'BLOKIRANA' || card.status === 'BLOCKED') && (
                       <button
                         className={styles.btnUnblock}
                         onClick={() => onUnblockClick({ card, clientName })}

@@ -18,6 +18,7 @@ export default function LoanRequestsTable({ requests, onApprove, onReject, actio
     }, ref);
     return () => ctx.revert();
   }, [requests.length]);
+
   if (requests.length === 0) {
     return (
       <div className={styles.tableCard}>
@@ -41,52 +42,57 @@ export default function LoanRequestsTable({ requests, onApprove, onReject, actio
               <th>Klijent</th>
               <th>Iznos</th>
               <th>Period</th>
-              <th>Tip stope</th>
+              <th>Tip kredita</th>
+              <th>Mesečna rata</th>
               <th>Status</th>
               <th>Akcije</th>
             </tr>
           </thead>
           <tbody>
-            {requests.map(req => (
-              <tr key={req.id} className="lrt-row">
-                <td className={styles.clientName}>{req.client_name}</td>
-                <td className={styles.mono}>
-                  {Number(req.amount).toLocaleString('sr-RS', { minimumFractionDigits: 2 })}{' '}
-                  {req.currency}
-                </td>
-                <td>{req.duration_months} mes.</td>
-                <td>
-                  <span className={req.rate_type === 'VARIJABILNA' ? styles.badgeVar : styles.badgeFix}>
-                    {req.rate_type === 'VARIJABILNA' ? 'Varijabilna' : 'Fiksna'}
-                  </span>
-                </td>
-                <td>
-                  <LoanStatusBadge status={req.status} />
-                </td>
-                <td>
-                  {req.status === 'NA ČEKANJU' && (
-                    <div className={styles.actionBtns}>
-                      <button
-                        className={styles.btnApprove}
-                        onClick={() => onApprove(req.id)}
-                        disabled={actionId === req.id}
-                        title="Odobri kreditni zahtev"
-                      >
-                        {actionId === req.id ? '...' : 'Odobri'}
-                      </button>
-                      <button
-                        className={styles.btnReject}
-                        onClick={() => onReject(req.id)}
-                        disabled={actionId === req.id}
-                        title="Odbij kreditni zahtev"
-                      >
-                        {actionId === req.id ? '...' : 'Odbij'}
-                      </button>
-                    </div>
-                  )}
-                </td>
-              </tr>
-            ))}
+            {requests.map(req => {
+              const isPending = req.status === 'PENDING' || req.status === 'NA ČEKANJU';
+              return (
+                <tr key={req.id} className="lrt-row">
+                  <td className={styles.clientName}>{req._clientName ?? `Klijent #${req.client_id}`}</td>
+                  <td className={styles.mono}>
+                    {Number(req.amount).toLocaleString('sr-RS', { minimumFractionDigits: 2 })}{' '}
+                    {req.currency ?? ''}
+                  </td>
+                  <td>{req.repayment_period ?? req.duration_months} mes.</td>
+                  <td>{req.loan_type ?? ''}</td>
+                  <td className={styles.mono}>
+                    {req.monthly_installment
+                      ? Number(req.monthly_installment).toLocaleString('sr-RS', { minimumFractionDigits: 2 })
+                      : '—'}
+                  </td>
+                  <td>
+                    <LoanStatusBadge status={req.status} />
+                  </td>
+                  <td>
+                    {isPending && (
+                      <div className={styles.actionBtns}>
+                        <button
+                          className={styles.btnApprove}
+                          onClick={() => onApprove(req.id)}
+                          disabled={actionId === req.id}
+                          title="Odobri kreditni zahtev"
+                        >
+                          {actionId === req.id ? '...' : 'Odobri'}
+                        </button>
+                        <button
+                          className={styles.btnReject}
+                          onClick={() => onReject(req.id)}
+                          disabled={actionId === req.id}
+                          title="Odbij kreditni zahtev"
+                        >
+                          {actionId === req.id ? '...' : 'Odbij'}
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

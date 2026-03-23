@@ -1,5 +1,6 @@
 import { bankingApi as api } from '../client';
 
+
 export const loansApi = {
   // Client: list their loans (sortable by amount: asc/desc)
   getMyLoans:    (clientId, params) => api.get(`/clients/${clientId}/loans`, { params }),
@@ -16,4 +17,10 @@ export const loansApi = {
   // Employee admin: approve / reject a loan request
   approve: (id) => api.patch(`/loan-requests/${id}/approve`),
   reject:  (id) => api.patch(`/loan-requests/${id}/reject`),
+
+  // Employee admin: update reference rate (Euribor/Belibor) for variable-rate loans
+  updateRate: (data) => api.put('/loans/variable-rate', data),
+
+  // Employee admin: list all active loans (approved loan requests)
+  getAll: (params) => api.get('/loan-requests', { params }),
 };

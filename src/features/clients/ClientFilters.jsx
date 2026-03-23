@@ -26,6 +26,12 @@ export default function ClientFilters({ filters, onFilterChange }) {
         value={filters.last_name}
         onChange={e => update('last_name', e.target.value)}
       />
+      <input
+        type="text"
+        placeholder="JMBG..."
+        value={filters.jmbg ?? ''}
+        onChange={e => update('jmbg', e.target.value)}
+      />
     </div>
   );
 }

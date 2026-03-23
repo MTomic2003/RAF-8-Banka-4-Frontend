@@ -26,9 +26,9 @@ export default function PaymentFilters({ filters, onFilterChange }) {
                     className={styles.selectInput}
                 >
                     <option value="">Svi statusi</option>
-                    <option value="Realizovano">Realizovano</option>
-                    <option value="U obradi">U obradi</option>
-                    <option value="Odbijeno">Odbijeno</option>
+                    <option value="completed">Realizovano</option>
+                    <option value="processing">U obradi</option>
+                    <option value="failed">Odbijeno</option>
                 </select>
             </div>
 

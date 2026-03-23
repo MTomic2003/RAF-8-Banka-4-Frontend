@@ -13,7 +13,19 @@ export default function ClientsPortal() {
   const pageRef = useRef(null);
 
   const { data, loading, error, refetch } = useFetch(() => clientsApi.getAll());
-  const clients = data?.data ?? [];
+  const allClients = data?.data ?? (Array.isArray(data) ? data : []);
+
+  const [search, setSearch] = useState('');
+  const clients = allClients.filter(c => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    return (
+      (c.first_name ?? '').toLowerCase().includes(q) ||
+      (c.last_name ?? '').toLowerCase().includes(q) ||
+      (c.email ?? '').toLowerCase().includes(q) ||
+      (c.jmbg ?? '').includes(q)
+    );
+  });
 
   const [selected,    setSelected]    = useState(null);
   const [saving,      setSaving]      = useState(false);
@@ -78,6 +90,19 @@ export default function ClientsPortal() {
 
         {!loading && !error && (
           <>
+            <div className="page-anim" style={{ marginBottom: '1rem' }}>
+              <input
+                type="text"
+                placeholder="Pretraži po imenu, prezimenu, emailu ili JMBG..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                style={{
+                  width: '100%', maxWidth: 480, height: 42, padding: '0 14px',
+                  border: '1.5px solid var(--border)', borderRadius: 'var(--radius)',
+                  fontSize: 14, background: 'var(--surface)',
+                }}
+              />
+            </div>
             <div className="page-anim">
               <ClientsTable
                 clients={clients}

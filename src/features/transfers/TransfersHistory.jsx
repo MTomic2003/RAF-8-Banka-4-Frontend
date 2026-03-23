@@ -21,7 +21,8 @@ export default function TransfersHistory() {
 
 
     const transfers = useMemo(() => {
-        return transfersRes?.data || [];
+        const raw = Array.isArray(transfersRes) ? transfersRes : transfersRes?.data ?? [];
+        return raw;
     }, [transfersRes]);
 
     const [selectedTransfer, setSelectedTransfer] = useState(null);
@@ -126,10 +127,10 @@ export default function TransfersHistory() {
                                             </div>
                                         </td>
                                         <td className={styles.amountCell}>
-                                            {formatAmount(t.initial_amount ?? t.initialAmount, t.exchange_rate ? '' : '')}
+                                            {formatAmount(t.initial_amount ?? t.initialAmount ?? t.amount, t.from_currency ?? t.fromCurrency ?? '')}
                                         </td>
                                         <td className={styles.amountCell}>
-                                            {formatAmount(t.final_amount ?? t.finalAmount, '')}
+                                            {formatAmount(t.final_amount ?? t.finalAmount ?? t.amount, t.to_currency ?? t.toCurrency ?? '')}
                                         </td>
                                         <td>
                         <span className={styles.status}>

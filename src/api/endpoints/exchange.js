@@ -1,9 +1,6 @@
-import api from '../client';
+import { bankingApi } from '../client';
 
 export const exchangeApi = {
-    getRates: () => api.get('/exchange/rates'),
-
-
-    convert: ({ amount, fromCurrency, toCurrency }) =>
-        api.post('/exchange/convert', { amount, fromCurrency, toCurrency }),
+    getRates: () => bankingApi.get('/exchange/rates'),
+    calculate: (params) => bankingApi.get('/exchange/calculate', { params }),
 };

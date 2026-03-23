@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import gsap from 'gsap';
 import { loansApi } from '../../api/endpoints/loans';
+import { clientsApi } from '../../api/endpoints/clients';
 import LoanList           from '../../features/loans/LoanList';
 import LoanDetails        from '../../features/loans/LoanDetails';
 import LoanRequestsTable  from '../../features/loans/LoanRequestsTable';
@@ -26,16 +27,44 @@ export default function Loans() {
   const [actionId, setActionId]         = useState(null);
 
   useEffect(() => {
-    // Endpoint for listing all active loans across clients is not yet available in the backend.
-    // This tab will show an empty state until the backend adds a GET /loans employee endpoint.
-    setLoadingLoans(false);
-  }, []);
-
-  useEffect(() => {
     loansApi.getRequests()
-      .then(res => setRequests(res.data ?? []))
-      .catch(() => setErrorReqs('Nije moguće učitati kreditne zahteve.'))
-      .finally(() => setLoadingReqs(false));
+      .then(async (res) => {
+        const rawRequests = Array.isArray(res) ? res : res?.data ?? [];
+
+        // Fetch all clients and build name map
+        const nameMap = {};
+        try {
+          const clientsRes = await clientsApi.getAll();
+          const clientsList = Array.isArray(clientsRes) ? clientsRes : clientsRes?.data ?? [];
+          clientsList.forEach(c => {
+            nameMap[c.id] = `${c.first_name ?? ''} ${c.last_name ?? ''}`.trim() || `Klijent #${c.id}`;
+          });
+        } catch {
+          // If fetching clients fails, we'll show client IDs instead
+        }
+
+        // Attach client names to requests
+        const enriched = rawRequests.map(r => ({
+          ...r,
+          _clientName: nameMap[r.client_id] ?? `Klijent #${r.client_id}`,
+        }));
+
+        // Split into active loans (approved) and pending requests
+        const active = enriched.filter(r => r.status === 'APPROVED');
+        setLoans(active);
+        if (active.length > 0) setSelectedLoan(active[0]);
+        setLoadingLoans(false);
+
+        setRequests(enriched);
+      })
+      .catch((err) => {
+        setErrorLoans('Nije moguće učitati kredite.');
+        setErrorReqs('Nije moguće učitati kreditne zahteve.');
+      })
+      .finally(() => {
+        setLoadingLoans(false);
+        setLoadingReqs(false);
+      });
   }, []);
 
   useLayoutEffect(() => {
@@ -55,7 +84,9 @@ export default function Loans() {
     setActionId(id);
     try {
       await loansApi.approve(id);
-      setRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'ODOBRENA' } : r));
+      setRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'APPROVED' } : r));
+    } catch {
+      // silently fail — status stays the same
     } finally {
       setActionId(null);
     }
@@ -65,7 +96,9 @@ export default function Loans() {
     setActionId(id);
     try {
       await loansApi.reject(id);
-      setRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'ODBIJENA' } : r));
+      setRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'REJECTED' } : r));
+    } catch {
+      // silently fail
     } finally {
       setActionId(null);
     }

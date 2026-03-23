@@ -1,5 +1,10 @@
 // src/features/exchange/ExchangeTable.jsx
-import styles from './RatesList.module.css';  // ili CurrencyCalculator.module.css – ako koristiš isti css fajl
+import styles from './RatesList.module.css';
+
+const FLAG_EMOJI = {
+    EUR: '🇪🇺', CHF: '🇨🇭', USD: '🇺🇸', GBP: '🇬🇧',
+    JPY: '🇯🇵', CAD: '🇨🇦', AUD: '🇦🇺', RSD: '🇷🇸',
+};
 
 export default function ExchangeTable({ rates }) {
     return (
@@ -11,32 +16,26 @@ export default function ExchangeTable({ rates }) {
                     <th>Kupovni kurs</th>
                     <th>Srednji kurs</th>
                     <th>Prodajni kurs</th>
-
                 </tr>
                 </thead>
                 <tbody>
-                {rates.map(rate => (
-                    <tr key={rate.code} className={styles.row}>
-                        <td className={styles.currencyCell}>
-                            <img
-                                src={rate.flag}
-                                alt={`${rate.code} zastava`}
-                                className={styles.flag}
-                                width={24}
-                                height={18}
-                                loading="lazy"
-                                onError={e => {
-                                    e.target.src = '/flags/fallback.svg';
-                                    e.target.alt = 'Zastava nije dostupna';
-                                }}
-                            />
-                            <span>{rate.code}</span>
-                        </td>
-                        <td>{rate.buy?.toFixed(2) || '—'}</td>
-                        <td className={styles.midRate}>{rate.mid?.toFixed(4) || '—'}</td>
-                        <td>{rate.sell?.toFixed(2) || '—'}</td>
-                    </tr>
-                ))}
+                {rates.map(rate => {
+                    const code = rate.code ?? rate.currency;
+                    const buy  = rate.buy  ?? rate.buy_rate;
+                    const sell = rate.sell ?? rate.sell_rate;
+                    const mid  = rate.mid  ?? ((buy + sell) / 2);
+                    return (
+                        <tr key={code} className={styles.row}>
+                            <td className={styles.currencyCell}>
+                                <span className={styles.flagEmoji}>{FLAG_EMOJI[code] ?? '🏳️'}</span>
+                                <span>{code}</span>
+                            </td>
+                            <td>{buy != null ? buy.toFixed(2) : '—'}</td>
+                            <td className={styles.midRate}>{mid != null ? mid.toFixed(4) : '—'}</td>
+                            <td>{sell != null ? sell.toFixed(2) : '—'}</td>
+                        </tr>
+                    );
+                })}
                 </tbody>
             </table>
         </div>

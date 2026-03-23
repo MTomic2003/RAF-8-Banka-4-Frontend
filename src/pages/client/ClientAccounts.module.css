@@ -1,0 +1,532 @@
+.page {
+  min-height: 100vh;
+  background: var(--bg);
+  padding: 2rem 2.5rem;
+  max-width: 1320px;
+  margin: 0 auto;
+}
+
+.topBar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+
+.back {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 7px 14px;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--tx-2);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.back:hover { border-color: var(--blue); color: var(--blue); }
+
+.title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--tx-1);
+  flex: 1;
+}
+
+/* ── MASTER-DETAIL LAYOUT ── */
+.masterDetail {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+/* ── ACCOUNT LIST (LEFT) ── */
+.accountsPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.accountCard {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  border: 1.5px solid var(--border);
+  padding: 1.25rem 1.25rem;
+  cursor: pointer;
+  transition: all var(--transition);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.accountCard:hover {
+  border-color: var(--blue);
+  box-shadow: 0 2px 12px rgba(27, 79, 216, 0.08);
+}
+.accountCardActive {
+  border-color: var(--blue);
+  background: var(--blue-dim);
+  box-shadow: 0 2px 12px rgba(27, 79, 216, 0.1);
+}
+
+.accountTop {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+}
+
+.accountIcon {
+  width: 42px;
+  height: 42px;
+  background: var(--blue-dim);
+  color: var(--blue);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.accountInfo { flex: 1; min-width: 0; }
+
+.accountName {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--tx-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.accountNumber {
+  font-size: 12px;
+  color: var(--tx-3);
+  font-family: var(--mono);
+  margin-top: 3px;
+}
+
+.accountBottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.accountBalance {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--tx-1);
+}
+
+.detailsBtn {
+  background: transparent;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 5px 12px;
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tx-2);
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+.detailsBtn:hover {
+  border-color: var(--blue);
+  color: var(--blue);
+  background: var(--blue-dim);
+}
+
+/* ── TRANSACTIONS PANEL (RIGHT) ── */
+.txPanel {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  min-height: 400px;
+}
+
+.txHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.txTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--tx-1);
+}
+
+.sortGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sortLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--tx-3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sortSelect {
+  height: 34px;
+  padding: 0 10px;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--tx-1);
+  cursor: pointer;
+  outline: none;
+  transition: border-color var(--transition);
+}
+.sortSelect:focus { border-color: var(--blue); }
+
+.txBody { padding: 0; }
+
+.txTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.txTable thead th {
+  text-align: left;
+  padding: 12px 1.5rem;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--tx-3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.txTable tbody td {
+  padding: 14px 1.5rem;
+  color: var(--tx-1);
+  border-bottom: 1px solid var(--border);
+}
+.txTable tbody tr:last-child td { border-bottom: none; }
+
+.txTable tbody tr:hover { background: rgba(27, 79, 216, 0.02); }
+
+.amountIn { color: var(--green); font-weight: 700; }
+.amountOut { color: var(--red); font-weight: 700; }
+
+.txLoading,
+.txEmpty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  padding: 2rem;
+  color: var(--tx-3);
+  font-size: 14px;
+}
+
+/* ── ACCOUNT DETAILS MODAL ── */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(13, 27, 62, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  padding: 1rem;
+}
+
+.modal {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.15);
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modalSmall {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.15);
+  width: 100%;
+  max-width: 420px;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.modalTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--tx-1);
+}
+
+.modalClose {
+  background: var(--bg);
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 13px;
+  color: var(--tx-2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition);
+}
+.modalClose:hover { background: var(--border); }
+
+.modalBody { padding: 1.5rem; }
+
+.detailsGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.detailRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: var(--bg);
+  border-radius: var(--radius);
+}
+
+.detailLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tx-3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.detailValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--tx-1);
+  text-align: right;
+}
+
+.statusActive {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: var(--green-bg);
+  color: #065F46;
+}
+
+/* ── SECTION LABELS & DIVIDERS ── */
+.sectionLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--tx-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 0.625rem;
+}
+
+.sectionDivider {
+  height: 1px;
+  background: var(--border);
+  margin: 1.25rem 0;
+}
+
+.detailHighlight {
+  color: var(--blue);
+  font-weight: 800;
+}
+
+/* ── BUSINESS ACCOUNT SECTION ── */
+.businessSection {
+  margin-bottom: 0;
+}
+
+/* ── ACTION BUTTONS ── */
+.actionsList {
+  display: flex;
+  flex-direction: column;
+}
+
+.actionRow {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 14px 0;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--tx-1);
+  cursor: pointer;
+  text-align: left;
+  transition: color var(--transition);
+}
+.actionRow:last-child { border-bottom: none; }
+.actionRow:hover { color: var(--blue); }
+
+.actionArrow {
+  font-size: 18px;
+  color: var(--tx-3);
+  transition: color var(--transition);
+}
+.actionRow:hover .actionArrow { color: var(--blue); }
+
+/* ── FORM FIELDS (rename / limits popups) ── */
+.modalBody {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.formField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formField label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tx-2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.formInput {
+  height: 44px;
+  padding: 0 12px;
+  background: var(--input-bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  font-family: var(--font);
+  font-size: 14px;
+  color: var(--tx-1);
+  outline: none;
+  width: 100%;
+  transition: border-color var(--transition);
+}
+.formInput:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(27,79,216,0.08); }
+.formInput:read-only { background: var(--bg); color: var(--tx-3); cursor: default; }
+
+.errorMsg {
+  font-size: 13px;
+  color: var(--red);
+  font-weight: 500;
+}
+
+.modalActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.btnPrimary {
+  height: 42px;
+  padding: 0 20px;
+  background: var(--blue);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+.btnPrimary:hover:not(:disabled) { background: var(--navy-mid); }
+.btnPrimary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.btnGhost {
+  height: 42px;
+  padding: 0 20px;
+  background: transparent;
+  color: var(--tx-2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.btnGhost:hover { border-color: var(--blue); color: var(--blue); }
+
+/* ── OTP / SUCCESS ── */
+.otpNote {
+  font-size: 13px;
+  color: var(--tx-2);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.successMsg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2rem 1rem;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--green);
+}
+
+.successIcon {
+  width: 52px;
+  height: 52px;
+  background: var(--green-bg);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: var(--green);
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  .page { padding: 1rem; }
+  .masterDetail {
+    grid-template-columns: 1fr;
+  }
+  .accountsPanel {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .accountsPanel {
+    grid-template-columns: 1fr;
+  }
+}

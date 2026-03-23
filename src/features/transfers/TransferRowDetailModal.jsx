@@ -22,20 +22,19 @@ export default function TransferRowDetailModal({ transfer, onClose }) {
 
     if (!transfer) return null;
 
-    const {
-        date,
-        createdAt,
-        fromAccountNumber,
-        fromCurrency,
-        toAccountNumber,
-        toCurrency,
-        initialAmount,
-        finalAmount,
-        commission = 0,
-        exchangeRate,
-        transactionId,
-        status = 'Uspešno',
-    } = transfer;
+    // Support both snake_case (backend) and camelCase field names
+    const date = transfer.date ?? transfer.created_at;
+    const createdAt = transfer.created_at ?? transfer.createdAt;
+    const fromAccountNumber = transfer.from_account_number ?? transfer.fromAccountNumber;
+    const fromCurrency = transfer.from_currency ?? transfer.fromCurrency ?? '';
+    const toAccountNumber = transfer.to_account_number ?? transfer.toAccountNumber;
+    const toCurrency = transfer.to_currency ?? transfer.toCurrency ?? '';
+    const initialAmount = transfer.initial_amount ?? transfer.initialAmount ?? transfer.amount ?? 0;
+    const finalAmount = transfer.final_amount ?? transfer.finalAmount ?? initialAmount;
+    const commission = transfer.commission ?? 0;
+    const exchangeRate = transfer.exchange_rate ?? transfer.exchangeRate;
+    const transactionId = transfer.transfer_id ?? transfer.transactionId ?? transfer.id;
+    const status = transfer.status ?? 'Uspešno';
 
     const formatDateTime = (dt) => {
         return new Date(dt || date).toLocaleString('sr-RS', {
@@ -48,7 +47,7 @@ export default function TransferRowDetailModal({ transfer, onClose }) {
     };
 
     const formatMoney = (amt, curr) =>
-        amt.toLocaleString('sr-RS', {
+        Number(amt || 0).toLocaleString('sr-RS', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
         }) + ' ' + curr;

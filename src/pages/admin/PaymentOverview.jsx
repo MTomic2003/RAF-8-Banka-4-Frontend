@@ -45,12 +45,16 @@ export default function PaymentOverview() {
 
   const { data, loading, error } = useFetch(
     () => {
-      const params = { 
-        page, 
+      const params = {
+        page,
         page_size: pageSize,
         type: activeTab === 'payments' ? 'payment' : 'exchange',
-        ...filters // <--- Šalje SVE: status, dateFrom, dateTo, itd.
       };
+      if (filters.status) params.status = filters.status;
+      if (filters.dateFrom) params.start_date = filters.dateFrom;
+      if (filters.dateTo) params.end_date = filters.dateTo;
+      if (filters.amountFrom) params.min_amount = filters.amountFrom;
+      if (filters.amountTo) params.max_amount = filters.amountTo;
       return paymentsApi.getAll(clientId, params);
     },
     [activeTab, page, filters, clientId] // Osvežava se na svaku promenu filtera

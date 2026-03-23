@@ -306,6 +306,20 @@
   font-weight: 800;
 }
 
+/* Card status tag on visual */
+.cardStatusTag {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.cardStatus_success { background: rgba(16,185,129,0.2); color: #10B981; }
+.cardStatus_warning { background: rgba(234,179,8,0.2); color: #EAB308; }
+.cardStatus_danger { background: rgba(239,68,68,0.2); color: #EF4444; }
+.cardStatus_neutral { background: rgba(255,255,255,0.2); color: #fff; }
+
 .cardBottomActions {
   display: flex;
   align-items: center;
@@ -651,6 +665,10 @@
 
 .optionDanger {
   color: var(--red);
+  background: var(--red-bg, #ffebee);
+  border-radius: var(--radius);
+  padding: 16px 12px;
+  font-weight: 700;
 }
 
 .loadingState,

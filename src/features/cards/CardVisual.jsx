@@ -1,25 +1,32 @@
 import { useMemo, useState } from 'react';
 import {
+  CARD_STATUS,
+  formatCardNumberForUi,
   formatLimit,
   getCardBrand,
-  maskCardNumber,
+  getStatusMeta,
 } from '../../utils/cardHelpers';
 import styles from '../../pages/admin/CardsPage.module.css';
 
 export default function CardVisual({ card, onOpenDetails }) {
   const [showBack, setShowBack] = useState(false);
 
-  const maskedNumber = useMemo(() => maskCardNumber(card.cardNumber), [card.cardNumber]);
+  const maskedNumber = useMemo(() => formatCardNumberForUi(card.cardNumber), [card.cardNumber]);
   const brand = useMemo(() => getCardBrand(card.cardNumber), [card.cardNumber]);
+  const statusMeta = useMemo(() => getStatusMeta(card.status), [card.status]);
 
   return (
     <div className={styles.cardVisualWrap}>
       <div className={`${styles.card3d} ${showBack ? styles.card3dFlipped : ''}`}>
         <div className={`${styles.cardFace} ${styles.cardFront}`}>
-          <div className={styles.bankChip} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'relative', zIndex: 1 }}>
+            <div className={styles.bankChip} />
+            <span className={`${styles.cardStatusTag} ${styles[`cardStatus_${statusMeta.tone}`]}`}>
+              {statusMeta.label}
+            </span>
+          </div>
 
           <div className={styles.cardBrand}>{brand?.label || 'Kartica'}</div>
-          <div className={styles.cardAmount}>{formatLimit(card.limitTotal)} RSD</div>
 
           <div className={styles.cardNumber}>{maskedNumber}</div>
 

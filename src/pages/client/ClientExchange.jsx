@@ -1,49 +1,58 @@
-import { useRef, useLayoutEffect, useState } from 'react';
+import { useRef, useLayoutEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
-import { clientApi } from '../../api/endpoints/client';
+import { exchangeApi } from '../../api/endpoints/exchange';
 import { useFetch } from '../../hooks/useFetch';
-import { useAuthStore } from '../../store/authStore';
+import Spinner from '../../components/ui/Spinner';
 import styles from './ClientSubPage.module.css';
+
+const FLAG_EMOJI = {
+  RSD: '🇷🇸', EUR: '🇪🇺', CHF: '🇨🇭', USD: '🇺🇸', GBP: '🇬🇧',
+  JPY: '🇯🇵', CAD: '🇨🇦', AUD: '🇦🇺',
+};
 
 export default function ClientExchange() {
   const pageRef = useRef(null);
   const navigate = useNavigate();
-  const clientId = useAuthStore(s => s.user?.id);
-  // Exchange rates endpoint not yet available in backend — rates will be empty
-  const rates = [];
-  const { data: accountsData } = useFetch(() => clientApi.getAccounts(clientId), [clientId]);
-  const accounts = accountsData?.data ?? [];
+  const { data: ratesData, loading } = useFetch(() => exchangeApi.getRates(), []);
+  const rates = Array.isArray(ratesData?.rates) ? ratesData.rates
+    : Array.isArray(ratesData) ? ratesData : [];
 
-  const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState('EUR');
-  const [direction, setDirection] = useState('buy'); // buy = kupujem devize, sell = prodajem devize
-  const [result, setResult] = useState('');
-  const [success, setSuccess] = useState(false);
+  const currencies = useMemo(() => {
+    const codes = ['RSD', ...rates.map(r => r.code ?? r.currency)];
+    return [...new Set(codes)];
+  }, [rates]);
+
+  const [amount, setAmount] = useState(1);
+  const [fromCurrency, setFromCurrency] = useState('EUR');
+  const [toCurrency, setToCurrency] = useState('RSD');
+
+  // Real-time dynamic calculation
+  const result = useMemo(() => {
+    if (!rates.length || !amount || amount <= 0) return 0;
+    function toRSD(cur, val) {
+      if (cur === 'RSD') return val;
+      const r = rates.find(x => (x.code ?? x.currency) === cur);
+      return r ? val * (r.buy ?? r.buy_rate ?? 0) : 0;
+    }
+    function fromRSD(cur, val) {
+      if (cur === 'RSD') return val;
+      const r = rates.find(x => (x.code ?? x.currency) === cur);
+      const sell = r?.sell ?? r?.sell_rate ?? 0;
+      return sell > 0 ? val / sell : 0;
+    }
+    return fromRSD(toCurrency, toRSD(fromCurrency, amount));
+  }, [amount, fromCurrency, toCurrency, rates]);
 
   useLayoutEffect(() => {
+    if (loading) return;
     const ctx = gsap.context(() => {
       gsap.from('.sub-card', { opacity: 0, y: 20, duration: 0.45, ease: 'power2.out', stagger: 0.07 });
     }, pageRef);
     return () => ctx.revert();
-  }, []);
+  }, [loading]);
 
-  function handleCalc() {
-    const rate = rates.find(r => r.currency === currency);
-    if (!rate || !amount) return;
-    const val = parseFloat(amount);
-    if (direction === 'buy') {
-      setResult(`${val} ${currency} = ${(val * rate.sell).toFixed(2)} RSD`);
-    } else {
-      setResult(`${val} RSD = ${(val / rate.buy).toFixed(4)} ${currency}`);
-    }
-  }
-
-  function handleExchange() {
-    if (!amount) return;
-    setSuccess(true);
-    setTimeout(() => { setSuccess(false); setAmount(''); setResult(''); }, 2500);
-  }
+  if (loading) return <Spinner />;
 
   return (
     <div ref={pageRef} className={styles.page}>
@@ -53,53 +62,85 @@ export default function ClientExchange() {
       </div>
 
       {/* Kursna lista */}
-      <div className={`sub-card ${styles.card}`}>
+      <div className={`sub-card ${styles.card}`} style={{ display: 'block' }}>
         <h2 className={styles.sectionTitle}>Kursna lista</h2>
         <table className={styles.ratesTable}>
           <thead>
-            <tr><th>Valuta</th><th>Kupovni kurs</th><th>Prodajni kurs</th></tr>
+            <tr>
+              <th>Valuta</th>
+              <th>Kupovni kurs</th>
+              <th>Srednji kurs</th>
+              <th>Prodajni kurs</th>
+            </tr>
           </thead>
           <tbody>
-            {rates.map(r => (
-              <tr key={r.currency}>
-                <td><strong>{r.currency}</strong></td>
-                <td>{r.buy.toFixed(2)} RSD</td>
-                <td>{r.sell.toFixed(2)} RSD</td>
-              </tr>
-            ))}
+            {rates.map(r => {
+              const code = r.code ?? r.currency;
+              const buy = r.buy ?? r.buy_rate;
+              const sell = r.sell ?? r.sell_rate;
+              const mid = r.mid ?? ((buy + sell) / 2);
+              return (
+                <tr key={code}>
+                  <td>
+                    <span style={{ marginRight: 8 }}>{FLAG_EMOJI[code] ?? '🏳️'}</span>
+                    <strong>{code}</strong>
+                  </td>
+                  <td>{buy != null ? buy.toFixed(2) : '—'} RSD</td>
+                  <td style={{ color: 'var(--blue)', fontWeight: 600 }}>{mid != null ? mid.toFixed(4) : '—'} RSD</td>
+                  <td>{sell != null ? sell.toFixed(2) : '—'} RSD</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
 
-      {/* Forma za konverziju */}
+      {/* Kalkulator — proveri ekvivalentnost */}
       <div className={`sub-card ${styles.card} ${styles.formCard}`}>
-        <h2 className={styles.sectionTitle}>Konverzija valuta</h2>
-        {success && <div className={styles.successBanner}>✓ Menjačka transakcija je uspešno izvršena!</div>}
-        <div className={styles.directionToggle}>
-          <button className={`${styles.toggleBtn} ${direction === 'buy' ? styles.toggleActive : ''}`} onClick={() => setDirection('buy')}>
-            Kupujem devize
-          </button>
-          <button className={`${styles.toggleBtn} ${direction === 'sell' ? styles.toggleActive : ''}`} onClick={() => setDirection('sell')}>
-            Prodajem devize
-          </button>
-        </div>
-        <div className={styles.calcRow}>
-          <input type="number" placeholder="Iznos" className={styles.formInput} style={{ flex: 1 }} value={amount} onChange={e => setAmount(e.target.value)} />
-          <select className={styles.formInput} style={{ width: 100 }} value={currency} onChange={e => setCurrency(e.target.value)}>
-            {rates.map(r => <option key={r.currency} value={r.currency}>{r.currency}</option>)}
-          </select>
-          <button className={styles.calcBtn} onClick={handleCalc}>Izračunaj</button>
-        </div>
-        {result && <div className={styles.calcResult}>{result}</div>}
+        <h2 className={styles.sectionTitle}>Kalkulator valuta</h2>
+        <p style={{ fontSize: 13, color: 'var(--tx-3)', margin: '-0.5rem 0 0.5rem' }}>
+          Proveri ekvivalentnost — rezultat se ažurira u realnom vremenu.
+        </p>
+
         <div className={styles.formField}>
-          <label>Sa računa</label>
-          <select className={styles.formInput}>
-            {accounts.map(a => { const k = a.account_number ?? a.number ?? a.id; return <option key={k} value={k}>{a.name}</option>; })}
-          </select>
+          <label>Iznos</label>
+          <input
+            type="number"
+            min="0.01"
+            step="any"
+            placeholder="0.00"
+            className={styles.formInput}
+            value={amount}
+            onChange={e => setAmount(parseFloat(e.target.value) || 0)}
+          />
         </div>
-        <button className={styles.submitBtn} onClick={handleExchange} disabled={!amount}>
-          Izvrši konverziju
-        </button>
+
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <div className={styles.formField} style={{ flex: 1 }}>
+            <label>Iz valute</label>
+            <select className={styles.formInput} value={fromCurrency} onChange={e => setFromCurrency(e.target.value)}>
+              {currencies.map(c => (
+                <option key={c} value={c}>{FLAG_EMOJI[c] ?? ''} {c}</option>
+              ))}
+            </select>
+          </div>
+          <div className={styles.formField} style={{ flex: 1 }}>
+            <label>U valutu</label>
+            <select className={styles.formInput} value={toCurrency} onChange={e => setToCurrency(e.target.value)}>
+              {currencies.map(c => (
+                <option key={c} value={c}>{FLAG_EMOJI[c] ?? ''} {c}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className={styles.calcResult} style={{ textAlign: 'center', fontSize: 20, padding: '1rem' }}>
+          {result.toLocaleString('sr-RS', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          <span style={{ marginLeft: 6, fontWeight: 700 }}>{toCurrency}</span>
+        </div>
+        <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--tx-3)', margin: 0 }}>
+          {amount > 0 ? `${amount.toLocaleString('sr-RS')} ${fromCurrency}` : '—'}
+        </p>
       </div>
     </div>
   );

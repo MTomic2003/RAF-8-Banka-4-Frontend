@@ -4,7 +4,10 @@ export const accountsApi = {
   // Employee: list all accounts (paginated, filterable)
   getAll: (params) => api.get('/accounts', { params }),
 
-  // Client: create new bank account
+  // Employee: search client by JMBG or email
+  searchClient: (query) => api.get('/clients/search', { params: { query } }),
+
+  // Employee: create new bank account
   create: (data) => api.post('/accounts', data),
 
   // Update account name

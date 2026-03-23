@@ -1,34 +1,27 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+const proxyOptions = (target) => ({
+  target,
+  changeOrigin: true,
+  configure: (proxy) => {
+    proxy.on('proxyReq', (proxyReq) => {
+      proxyReq.removeHeader('cookie');
+      proxyReq.removeHeader('origin');
+      proxyReq.removeHeader('referer');
+    });
+  },
+});
+
 export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api/user': {
-        target: 'http://rafsi.davidovic.io:8080',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/user/, '/api'),
-        configure: (proxy) => {
-          proxy.on('proxyReq', (proxyReq) => {
-            proxyReq.removeHeader('cookie');
-            proxyReq.removeHeader('origin');
-            proxyReq.removeHeader('referer');
-          });
-        },
-      },
       '/api/banking': {
-        target: 'http://rafsi.davidovic.io:8081',
-        changeOrigin: true,
+        ...proxyOptions('http://localhost:8081'),
         rewrite: (path) => path.replace(/^\/api\/banking/, '/api'),
-        configure: (proxy) => {
-          proxy.on('proxyReq', (proxyReq) => {
-            proxyReq.removeHeader('cookie');
-            proxyReq.removeHeader('origin');
-            proxyReq.removeHeader('referer');
-          });
-        },
       },
+      '/api': proxyOptions('http://localhost:8080'),
     },
   },
 })

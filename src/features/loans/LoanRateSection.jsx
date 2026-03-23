@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Alert          from '../../components/ui/Alert';
 import styles         from './LoanRateSection.module.css';
 
@@ -6,7 +6,9 @@ export default function LoanRateSection({ onUpdate, saving, saveError, saveSucce
   const [value,      setValue]      = useState('');
   const [localError, setLocalError] = useState(null);
 
-  if (saveSuccess && value !== '') setValue('');
+  useEffect(() => {
+    if (saveSuccess) setValue('');
+  }, [saveSuccess]);
 
   function handleSubmit(e) {
     e.preventDefault();

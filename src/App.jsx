@@ -16,16 +16,20 @@ import ClientList     from './pages/admin/ClientList';
 import Loans          from './pages/admin/Loans';
 import PaymentOverview from './pages/admin/PaymentOverview';
 import Accounts       from './pages/admin/Accounts';
+import NewAccount     from './pages/admin/NewAccount';
 import CardsPage      from './pages/admin/CardsPage';
+import CardsPortal    from './pages/admin/CardsPortal';
+import ClientsPortal  from './pages/admin/ClientsPortal';
+import LoansPortal    from './pages/admin/LoansPortal';
 
 // Client pages
 import ClientDashboard  from './pages/client/ClientDashboard';
 import ClientAccounts   from './pages/client/ClientAccounts';
-import ClientCards      from './pages/client/ClientCards';
 import ClientExchange   from './pages/client/ClientExchange';
 import ClientLoans      from './pages/client/ClientLoans';
 import ClientRecipients from './pages/client/ClientRecipients';
 import ClientTransfers  from './pages/client/ClientTransfers';
+import ClientPaymentOverview from './pages/client/ClientPaymentOverview';
 import NewPayment       from './pages/client/NewPayment';
 
 // Shared
@@ -97,10 +101,10 @@ export default function App() {
         {/* KLIJENTSKE RUTE */}
         <Route path="/dashboard"           element={<ProtectedRoute><ClientRoute><ClientDashboard /></ClientRoute></ProtectedRoute>} />
         <Route path="/client/accounts"     element={<ProtectedRoute><ClientRoute><ClientAccounts  /></ClientRoute></ProtectedRoute>} />
-        <Route path="/client/payments"     element={<ProtectedRoute><ClientRoute><PaymentOverview /></ClientRoute></ProtectedRoute>} />
+        <Route path="/client/payments"     element={<ProtectedRoute><ClientRoute><ClientPaymentOverview /></ClientRoute></ProtectedRoute>} />
         <Route path="/client/transfers"    element={<ProtectedRoute><ClientRoute><ClientTransfers /></ClientRoute></ProtectedRoute>} />
         <Route path="/client/exchange"     element={<ProtectedRoute><ClientRoute><ClientExchange  /></ClientRoute></ProtectedRoute>} />
-        <Route path="/client/cards"        element={<ProtectedRoute><ClientRoute><ClientCards     /></ClientRoute></ProtectedRoute>} />
+        <Route path="/client/cards"        element={<ProtectedRoute><ClientRoute><CardsPage portalType="client" /></ClientRoute></ProtectedRoute>} />
         <Route path="/client/loans"        element={<ProtectedRoute><ClientRoute><ClientLoans     /></ClientRoute></ProtectedRoute>} />
         <Route path="/client/payments/new" element={<ProtectedRoute><ClientRoute><NewPayment      /></ClientRoute></ProtectedRoute>} />
         <Route path="/client/recipients"   element={<ProtectedRoute><ClientRoute><ClientRecipients /></ClientRoute></ProtectedRoute>} />
@@ -113,8 +117,12 @@ export default function App() {
         <Route path="/clients"   element={<ProtectedRoute><EmployeeRoute><ClientList   /></EmployeeRoute></ProtectedRoute>} />
         <Route path="/loans"     element={<ProtectedRoute><EmployeeRoute><Loans        /></EmployeeRoute></ProtectedRoute>} />
         <Route path="/payments"  element={<ProtectedRoute><EmployeeRoute><PaymentOverview /></EmployeeRoute></ProtectedRoute>} />
-        <Route path="/cards"     element={<ProtectedRoute><EmployeeRoute><CardsPage    /></EmployeeRoute></ProtectedRoute>} />
-        <Route path="/accounts"  element={<ProtectedRoute><EmployeeRoute><Accounts     /></EmployeeRoute></ProtectedRoute>} />
+        <Route path="/cards"     element={<ProtectedRoute><EmployeeRoute><CardsPage portalType="admin" /></EmployeeRoute></ProtectedRoute>} />
+        <Route path="/accounts"     element={<ProtectedRoute><EmployeeRoute><Accounts     /></EmployeeRoute></ProtectedRoute>} />
+        <Route path="/accounts/new" element={<ProtectedRoute><EmployeeRoute><NewAccount   /></EmployeeRoute></ProtectedRoute>} />
+        <Route path="/admin/cards"   element={<ProtectedRoute><EmployeeRoute><CardsPortal   /></EmployeeRoute></ProtectedRoute>} />
+        <Route path="/admin/clients" element={<ProtectedRoute><EmployeeRoute><ClientsPortal /></EmployeeRoute></ProtectedRoute>} />
+        <Route path="/admin/loans"   element={<ProtectedRoute><EmployeeRoute><LoansPortal   /></EmployeeRoute></ProtectedRoute>} />
         <Route path="/employees" element={
           <ProtectedRoute><EmployeeRoute><PermissionRoute permission="employee.view"><EmployeeList /></PermissionRoute></EmployeeRoute></ProtectedRoute>
         } />
@@ -125,8 +133,8 @@ export default function App() {
           <ProtectedRoute><EmployeeRoute><PermissionRoute permission="employee.view"><EmployeeDetails /></PermissionRoute></EmployeeRoute></ProtectedRoute>
         } />
 
-        <Route path="/exchange/rates"      element={<RatesList />} />
-        <Route path="/exchange/calculator" element={<CurrencyCalculator />} />
+        <Route path="/exchange/rates"      element={<ProtectedRoute><ClientRoute><RatesList /></ClientRoute></ProtectedRoute>} />
+        <Route path="/exchange/calculator" element={<ProtectedRoute><ClientRoute><CurrencyCalculator /></ClientRoute></ProtectedRoute>} />
 
         <Route path="*" element={<NotFound />} />
 

@@ -2,6 +2,8 @@ import { useRef, useLayoutEffect, useState, useEffect } from 'react';
 import { useNavigate }    from 'react-router-dom';
 import gsap               from 'gsap';
 import { clientApi }      from '../../api/endpoints/client';
+import { exchangeApi }   from '../../api/endpoints/exchange';
+import { paymentsApi }   from '../../api/endpoints/payments';
 import { useAuthStore }   from '../../store/authStore';
 import { useFetch }       from '../../hooks/useFetch';
 import Spinner            from '../../components/ui/Spinner';
@@ -94,13 +96,13 @@ function AccountSwitcherModal({ accounts, selected, onSelect, onClose }) {
         </div>
         <div className={styles.switcherList}>
           {accounts.map((acc, i) => (
-            <button key={acc.id} className={`${styles.switcherItem} ${selected === i ? styles.switcherItemActive : ''}`} onClick={() => { onSelect(i); onClose(); }}>
+            <button key={acc.account_number ?? acc.id} className={`${styles.switcherItem} ${selected === i ? styles.switcherItemActive : ''}`} onClick={() => { onSelect(i); onClose(); }}>
               <div className={styles.switcherIcon}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
               </div>
               <div className={styles.switcherInfo}>
                 <div className={styles.switcherName}>{acc.name}</div>
-                <div className={styles.switcherNumber}>••••{acc.number.slice(-4)}</div>
+                <div className={styles.switcherNumber}>••••{(acc.account_number ?? acc.number ?? '').slice(-4)}</div>
               </div>
               <div className={styles.switcherBalance}>{formatAmount(acc.balance, acc.currency)}</div>
               {selected === i && <span className={styles.switcherCheck}>✓</span>}
@@ -143,10 +145,26 @@ export default function ClientDashboard() {
 
   const { data: accountsData,  loading: loadingAccounts } = useFetch(() => clientApi.getAccounts(clientId), [clientId]);
 
-  const accounts     = accountsData?.data   ?? [];
-  const transactions = []; // No backend endpoint for client transactions list yet
-  const recipients   = []; // No backend endpoint for recipients yet
-  const rates        = []; // No backend endpoint for exchange rates yet
+  const accounts     = Array.isArray(accountsData) ? accountsData : accountsData?.data ?? [];
+
+  const activeAccount = accounts[selectedAccount];
+  const activeAccountNumber = activeAccount?.account_number ?? activeAccount?.number ?? '';
+
+  // Poslednje transakcije za selektovani račun
+  const { data: txData, loading: loadingTx } = useFetch(
+    () => clientId && activeAccountNumber
+      ? paymentsApi.getByAccount(clientId, activeAccountNumber, { page: 1, page_size: 5 })
+      : Promise.resolve(null),
+    [clientId, activeAccountNumber]
+  );
+  const transactions = Array.isArray(txData) ? txData : txData?.data ?? [];
+
+  // Sačuvani primaoci
+  const { data: payeesData } = useFetch(() => clientApi.getPayees(), []);
+  const recipients = Array.isArray(payeesData) ? payeesData : payeesData?.data ?? [];
+
+  const { data: ratesData } = useFetch(() => exchangeApi.getRates(), []);
+  const rates        = Array.isArray(ratesData?.rates) ? ratesData.rates : [];
 
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
@@ -158,12 +176,10 @@ export default function ClientDashboard() {
   function handleCalc() {
     const rate = rates.find(r => r.currency === calcFrom);
     if (!rate || !calcAmount) return;
-    setCalcResult(`${calcAmount} ${calcFrom} = ${(parseFloat(calcAmount) * rate.sell).toFixed(2)} RSD`);
+    setCalcResult(`${calcAmount} ${calcFrom} = ${(parseFloat(calcAmount) * rate.sell_rate).toFixed(2)} RSD`);
   }
 
   function handleLogout() { logout(); navigate('/login'); }
-
-  const activeAccount = accounts[selectedAccount];
 
   const navItems = [
     { label: 'Računi',     path: '/accounts' },
@@ -257,13 +273,13 @@ export default function ClientDashboard() {
             {loadingAccounts ? <Spinner /> : (
               <div className={styles.accountsList}>
                 {accounts.map((acc, i) => (
-                  <div key={acc.id} className={`${styles.accountItem} ${selectedAccount === i ? styles.accountItemActive : ''}`} onClick={() => setSelectedAccount(i)}>
+                  <div key={acc.account_number ?? acc.id} className={`${styles.accountItem} ${selectedAccount === i ? styles.accountItemActive : ''}`} onClick={() => setSelectedAccount(i)}>
                     <div className={styles.accountIcon}>
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
                     </div>
                     <div className={styles.accountInfo}>
                       <div className={styles.accountName}>{acc.name}</div>
-                      <div className={styles.accountNumber}>••••  {acc.number.replace(/-/g, '').slice(-6)}</div>
+                      <div className={styles.accountNumber}>••••  {(acc.account_number ?? acc.number ?? '').replace(/-/g, '').slice(-6)}</div>
                     </div>
                     <div className={styles.accountBalance}>
                       <div className={styles.balanceAmount}>{formatAmount(acc.balance, acc.currency)}</div>
@@ -287,16 +303,18 @@ export default function ClientDashboard() {
                 {activeAccount?.name ?? 'Račun'}
               </button>
             </div>
-            {false ? <Spinner /> : (
+            {loadingTx ? <Spinner /> : transactions.length === 0 ? (
+              <p style={{ color: 'var(--tx-3)', fontSize: 13, textAlign: 'center', padding: '2rem 0' }}>Nema transakcija za ovaj račun.</p>
+            ) : (
               <table className={styles.txTable}>
                 <thead><tr><th>Opis</th><th>Datum</th><th style={{ textAlign: 'right' }}>Iznos</th></tr></thead>
                 <tbody>
                   {transactions.slice(0, 5).map(tx => (
-                    <tr key={tx.id}>
-                      <td>{tx.description}</td>
-                      <td>{formatDate(tx.date)}</td>
-                      <td className={tx.type === 'credit' ? styles.credit : styles.debit}>
-                        {tx.type === 'credit' ? '+' : '-'}{formatAmount(tx.amount)}
+                    <tr key={tx.id ?? tx.payment_id}>
+                      <td>{tx.purpose ?? tx.description ?? '—'}</td>
+                      <td>{formatDate(tx.date ?? tx.created_at)}</td>
+                      <td className={tx.status === 'COMPLETED' || tx.type === 'credit' ? styles.credit : styles.debit}>
+                        {formatAmount(tx.amount, tx.currency)}
                       </td>
                     </tr>
                   ))}
@@ -312,12 +330,19 @@ export default function ClientDashboard() {
               <button className={styles.newPayBtn} onClick={() => navigate('/client/recipients')}>+ Novi primalac</button>
             </div>
             <div className={styles.recipientsList}>
-              {recipients.map(r => (
-                <button key={r.id} className={styles.recipientBtn} onClick={() => navigate('/client/payments/new')} title={`Plati ${r.name}`}>
-                  <div className={styles.recipientAvatar}>{r.initials}</div>
-                  <span className={styles.recipientName}>{r.name.split(' ')[0]}</span>
+              {recipients.slice(0, 4).map(r => {
+                const name = r.name ?? `${r.first_name ?? ''} ${r.last_name ?? ''}`.trim();
+                const initials = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+                return (
+                <button key={r.payee_id ?? r.id} className={styles.recipientBtn} onClick={() => navigate('/client/payments/new', { state: { recipient: { name, account: r.account_number } } })} title={`Plati ${name}`}>
+                  <div className={styles.recipientAvatar}>{initials}</div>
+                  <span className={styles.recipientName}>{name.split(' ')[0]}</span>
                 </button>
-              ))}
+                );
+              })}
+              {recipients.length === 0 && (
+                <p style={{ color: 'var(--tx-3)', fontSize: 13 }}>Nema sačuvanih primalaca.</p>
+              )}
             </div>
           </section>
 
@@ -332,9 +357,9 @@ export default function ClientDashboard() {
                 <div key={r.currency} className={styles.rateRow}>
                   <span className={styles.rateCurrency}>{r.currency}</span>
                   <span className={styles.rateLabel}>Kupovni</span>
-                  <span className={styles.rateValue}>{r.buy.toFixed(2)}</span>
+                  <span className={styles.rateValue}>{r.buy_rate.toFixed(2)}</span>
                   <span className={styles.rateLabel}>Prodajni</span>
-                  <span className={styles.rateValue}>{r.sell.toFixed(2)}</span>
+                  <span className={styles.rateValue}>{r.sell_rate.toFixed(2)}</span>
                 </div>
               ))}
             </div>

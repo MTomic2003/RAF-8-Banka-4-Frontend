@@ -36,6 +36,7 @@ export default function ClientLoans() {
   const [submitted, setSubmitted]     = useState(false);
   const [submitting, setSubmitting]   = useState(false);
   const [formError, setFormError]     = useState('');
+  const [loanCurrency, setLoanCurrency] = useState('RSD');
 
   const [loanType, setLoanType]                   = useState('CASH');
   const [selectedAccountId, setSelectedAccountId] = useState('');
@@ -43,24 +44,35 @@ export default function ClientLoans() {
   const [period, setPeriod]                       = useState('');
 
   const { data: loansData, loading, error } = useFetch(() => loansApi.getMyLoans(clientId), [clientId]);
-  const loans = loansData?.data ?? [];
+  const loans = Array.isArray(loansData) ? loansData : loansData?.data ?? [];
 
   const { data: accountsData } = useFetch(() => clientApi.getAccounts(clientId), [clientId]);
-  const accounts = accountsData?.data ?? [];
+  const accounts = Array.isArray(accountsData) ? accountsData : accountsData?.data ?? [];
+
+  // Fetch full loan details (with installments) when selecting
+  async function selectLoanWithDetails(loan) {
+    try {
+      const details = await loansApi.getLoanById(clientId, loan.id);
+      setSelectedLoan(details ?? loan);
+    } catch {
+      setSelectedLoan(loan);
+    }
+  }
 
   // Auto-select first loan
   useLayoutEffect(() => {
     if (loans.length > 0 && !selectedLoan) {
-      setSelectedLoan(loans[0]);
+      selectLoanWithDetails(loans[0]);
     }
   }, [loans]);
 
   useLayoutEffect(() => {
+    if (loading) return;
     const ctx = gsap.context(() => {
       gsap.from('.sub-card', { opacity: 0, y: 20, duration: 0.45, ease: 'power2.out', stagger: 0.07 });
     }, pageRef);
     return () => ctx.revert();
-  }, []);
+  }, [loading]);
 
   const selectedLoanType = LOAN_TYPES.find(t => t.value === loanType);
   const maxMonths = selectedLoanType?.maxMonths ?? 84;
@@ -68,6 +80,7 @@ export default function ClientLoans() {
 
   function openForm() {
     setLoanType('CASH');
+    setLoanCurrency('RSD');
     setSelectedAccountId(accounts[0]?.account_number ?? accounts[0]?.number ?? '');
     setAmount('');
     setPeriod('');
@@ -76,11 +89,20 @@ export default function ClientLoans() {
     setShowForm(true);
   }
 
+  // Currency mismatch check
+  const currencyMismatch = selectedAccount && loanCurrency !== (selectedAccount.currency ?? 'RSD');
+
   async function handleSubmit(e) {
     e.preventDefault();
     setFormError('');
 
     if (!selectedAccount) { setFormError('Izaberite račun.'); return; }
+
+    if (currencyMismatch) {
+      setFormError(`Valuta kredita (${loanCurrency}) mora biti ista kao valuta računa (${selectedAccount.currency}).`);
+      return;
+    }
+
     if (!amount || Number(amount) <= 0) { setFormError('Unesite ispravan iznos.'); return; }
 
     const numPeriod = Number(period);
@@ -96,6 +118,7 @@ export default function ClientLoans() {
         loan_type_id:     LOAN_TYPE_IDS[loanType],
         account_number:   selectedAccount.account_number ?? selectedAccount.number,
         amount:           Number(amount),
+        currency:         loanCurrency,
         repayment_period: numPeriod,
       });
       setSubmitted(true);
@@ -126,7 +149,7 @@ export default function ClientLoans() {
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '1.5rem', alignItems: 'start' }}>
           <div className="sub-card" style={{ borderRadius: 'var(--radius-lg)', overflow: 'hidden', border: '1px solid var(--border)' }}>
-            <LoanList loans={loans} selectedId={selectedLoan?.id} onSelectLoan={setSelectedLoan} />
+            <LoanList loans={loans} selectedId={selectedLoan?.id} onSelectLoan={selectLoanWithDetails} />
           </div>
           <div className="sub-card">
             {selectedLoan
@@ -145,8 +168,33 @@ export default function ClientLoans() {
               <button className={styles.modalClose} onClick={() => setShowForm(false)}>✕</button>
             </div>
             {submitted ? (
-              <div className={styles.successBanner} style={{ margin: '2rem' }}>
-                ✓ Zahtev je uspešno podnet! Kontaktiraćemo vas u roku od 2 radna dana.
+              <div style={{ padding: '2rem' }}>
+                {/* Status progress indicator */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0, marginBottom: 24 }}>
+                  {['Primljeno', 'U proveri', 'Odobreno'].map((step, i) => (
+                    <div key={step} style={{ display: 'flex', alignItems: 'center' }}>
+                      <div style={{
+                        width: 36, height: 36, borderRadius: '50%',
+                        background: i === 0 ? 'var(--green, #10B981)' : 'var(--border)',
+                        color: i === 0 ? '#fff' : 'var(--tx-3)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 13, fontWeight: 700,
+                      }}>
+                        {i === 0 ? '✓' : i + 1}
+                      </div>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: i === 0 ? 'var(--green)' : 'var(--tx-3)', marginLeft: 6 }}>
+                        {step}
+                      </span>
+                      {i < 2 && <div style={{ width: 40, height: 2, background: 'var(--border)', margin: '0 8px' }} />}
+                    </div>
+                  ))}
+                </div>
+                <div className={styles.successBanner}>
+                  ✓ Zahtev je uspešno podnet i nalazi se u statusu "U obradi".
+                </div>
+                <p style={{ fontSize: 13, color: 'var(--tx-2)', textAlign: 'center', marginTop: 12 }}>
+                  Kontaktiraćemo vas u roku od 2 radna dana sa odlukom.
+                </p>
               </div>
             ) : (
               <form className={styles.formCard} style={{ boxShadow: 'none', border: 'none' }} onSubmit={handleSubmit}>
@@ -158,27 +206,45 @@ export default function ClientLoans() {
                 </div>
 
                 <div className={styles.formField}>
+                  <label>Valuta kredita</label>
+                  <select className={styles.formInput} value={loanCurrency} onChange={e => { setLoanCurrency(e.target.value); setFormError(''); }}>
+                    <option value="RSD">RSD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="CHF">CHF</option>
+                    <option value="USD">USD</option>
+                  </select>
+                </div>
+
+                <div className={styles.formField}>
                   <label>Račun za kredit</label>
                   <select className={styles.formInput} value={selectedAccountId} onChange={e => { setSelectedAccountId(e.target.value); setFormError(''); }}>
                     <option value="">Izaberite račun...</option>
                     {accounts.map(a => {
                       const accNum = a.account_number ?? a.number;
+                      const accCurrency = a.currency ?? 'RSD';
+                      const mismatch = accCurrency !== loanCurrency;
                       return (
-                        <option key={accNum} value={accNum}>
-                          {a.name} — {formatAmount(a.balance)} ({a.currency})
+                        <option key={accNum} value={accNum} disabled={mismatch}>
+                          {a.name} — {formatAmount(a.balance)} ({accCurrency})
+                          {mismatch ? ' — neodgovarajuća valuta' : ''}
                         </option>
                       );
                     })}
                   </select>
-                  {selectedAccount && (
+                  {currencyMismatch && selectedAccount && (
+                    <span style={{ fontSize: 12, color: 'var(--red)', marginTop: 3 }}>
+                      Valuta računa ({selectedAccount.currency}) ne odgovara valuti kredita ({loanCurrency}).
+                    </span>
+                  )}
+                  {selectedAccount && !currencyMismatch && (
                     <span style={{ fontSize: 12, color: 'var(--tx-3)', marginTop: 3 }}>
-                      Valuta kredita: <strong>{selectedAccount.currency}</strong>
+                      Valuta: <strong>{selectedAccount.currency}</strong>
                     </span>
                   )}
                 </div>
 
                 <div className={styles.formField}>
-                  <label>Željeni iznos {selectedAccount ? `(${selectedAccount.currency})` : ''}</label>
+                  <label>Željeni iznos ({loanCurrency})</label>
                   <input type="number" min="1" step="any" placeholder="500000" className={styles.formInput} value={amount} onChange={e => setAmount(e.target.value)} required />
                 </div>
 
@@ -197,7 +263,7 @@ export default function ClientLoans() {
 
                 {formError && <p style={{ fontSize: 13, color: 'var(--red)', margin: 0 }}>{formError}</p>}
 
-                <button type="submit" className={styles.submitBtn} disabled={submitting || !!formError}>
+                <button type="submit" className={styles.submitBtn} disabled={submitting || !!formError || currencyMismatch}>
                   {submitting ? 'Slanje...' : 'Podnesi zahtev'}
                 </button>
               </form>

@@ -85,10 +85,11 @@ export default function ConfirmTransfer() {
         toAccount,
         amount,
         userName,
+        rateInfo,
+        isCrossCurrency,
     } = state;
 
     const numericAmount = parseFloat(amount) || 0;
-    const finalAmount   = numericAmount;
 
     const fromCurrency = fromAccount.currency ?? fromAccount.valuta;
     const toCurrency   = toAccount.currency   ?? toAccount.valuta;
@@ -96,6 +97,15 @@ export default function ConfirmTransfer() {
     const toBalance    = toAccount.balance    ?? toAccount.stanje   ?? 0;
     const fromNum      = fromAccount.account_number ?? fromAccount.number ?? fromAccount.broj;
     const toNum        = toAccount.account_number   ?? toAccount.number   ?? toAccount.broj;
+
+    // Cross-currency: compute commission (1%) and final amount
+    const commission = isCrossCurrency && rateInfo ? numericAmount * 0.01 : 0;
+    const convertedAmount = isCrossCurrency && rateInfo?.convertedAmount != null
+        ? rateInfo.convertedAmount
+        : numericAmount;
+    const finalAmount = isCrossCurrency && rateInfo
+        ? convertedAmount * (1 - 0.01)
+        : numericAmount;
 
     const handleConfirm = async (_code) => {
         setSubmitting(true);
@@ -198,6 +208,25 @@ export default function ConfirmTransfer() {
                                 </span>
                             </div>
 
+                            {/* EXCHANGE RATE & COMMISSION — only for cross-currency */}
+                            {isCrossCurrency && rateInfo && (
+                                <>
+                                    <div className={styles.summaryItem}>
+                                        <span className={styles.label}>Primenjeni kurs</span>
+                                        <span className={styles.value}>{rateInfo.label}</span>
+                                    </div>
+                                    <div className={styles.summaryItem}>
+                                        <span className={styles.label}>Provizija (1%)</span>
+                                        <span className={styles.value}>
+                                            {commission.toLocaleString('sr-RS', {
+                                                minimumFractionDigits: 2,
+                                                maximumFractionDigits: 2,
+                                            })} {fromCurrency}
+                                        </span>
+                                    </div>
+                                </>
+                            )}
+
                             {/* FINAL */}
                             <div className={`${styles.summaryItem} ${styles.finalRow}`}>
                                 <span className={styles.label}>
@@ -207,7 +236,7 @@ export default function ConfirmTransfer() {
                                     {Number(finalAmount).toLocaleString('sr-RS', {
                                         minimumFractionDigits: 2,
                                         maximumFractionDigits: 2,
-                                    })} {toCurrency}
+                                    })} {isCrossCurrency ? rateInfo?.toCurrency ?? toCurrency : toCurrency}
                                 </span>
                             </div>
                         </div>

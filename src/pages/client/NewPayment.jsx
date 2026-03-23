@@ -1,5 +1,5 @@
 import { useRef, useLayoutEffect, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import gsap from 'gsap';
 import { clientApi } from '../../api/endpoints/client';
 import { paymentsApi } from '../../api/endpoints/payments';
@@ -77,15 +77,20 @@ function formatAmount(n, currency = 'RSD') {
 export default function NewPayment() {
   const pageRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
+  const prefilled = location.state?.recipient;
+  const prefilledFrom = location.state?.fromAccount;
   const clientId = useAuthStore(s => s.user?.id);
 
   const { data: accountsData, loading: loadingAccounts } = useFetch(() => clientApi.getAccounts(clientId), [clientId]);
-  const accounts   = accountsData?.data ?? [];
-  const recipients = []; // No backend endpoint for recipients yet
+  const accounts   = Array.isArray(accountsData) ? accountsData : accountsData?.data ?? [];
 
-  const [fromAccountNumber, setFromAccountNumber] = useState('');
-  const [recipientName,   setRecipientName]   = useState('');
-  const [recipientAccount,setRecipientAccount]= useState('');
+  const { data: payeesData } = useFetch(() => clientApi.getPayees(), []);
+  const recipients = Array.isArray(payeesData) ? payeesData : payeesData?.data ?? [];
+
+  const [fromAccountNumber, setFromAccountNumber] = useState(prefilledFrom ?? '');
+  const [recipientName,   setRecipientName]   = useState(prefilled?.name ?? '');
+  const [recipientAccount,setRecipientAccount]= useState(prefilled?.account ?? '');
   const [amount,          setAmount]          = useState('');
   const [paymentCode,     setPaymentCode]     = useState('289');
   const [referenceNumber, setReferenceNumber] = useState('');
@@ -182,7 +187,7 @@ export default function NewPayment() {
 
   async function handleAddRecipient() {
     try {
-      await clientApi.createRecipient({
+      await clientApi.createPayee({
         name: recipientName.trim(),
         account_number: recipientAccount.replace(/\D/g, ''),
       });
@@ -304,7 +309,14 @@ export default function NewPayment() {
             <label>
               Iznos {fromAccount ? `(${fromAccount.currency})` : ''}
               {fromAccount && (
-                <span className={pStyles.infoIcon} title={`Stanje računa: ${formatAmount(fromAccount.balance, fromAccount.currency)}`}> ⓘ</span>
+                <span
+                  className={pStyles.infoIcon}
+                  title={[
+                    `Raspoloživo: ${formatAmount(fromAccount.balance, fromAccount.currency)}`,
+                    fromAccount.daily_limit != null ? `Dnevni limit: ${formatAmount(fromAccount.daily_limit, fromAccount.currency)}` : null,
+                    fromAccount.monthly_limit != null ? `Mesečni limit: ${formatAmount(fromAccount.monthly_limit, fromAccount.currency)}` : null,
+                  ].filter(Boolean).join('\n')}
+                > ⓘ</span>
               )}
             </label>
             <input
@@ -316,6 +328,12 @@ export default function NewPayment() {
               value={amount}
               onChange={e => { setAmount(e.target.value); setFormError(''); }}
             />
+            {fromAccount && (
+              <span className={pStyles.limitHint}>
+                Raspoloživo: <strong>{formatAmount(fromAccount.balance, fromAccount.currency)}</strong>
+                {fromAccount.daily_limit != null && <> · Dnevni limit: <strong>{formatAmount(fromAccount.daily_limit, fromAccount.currency)}</strong></>}
+              </span>
+            )}
           </div>
 
           {/* Šifra plaćanja */}

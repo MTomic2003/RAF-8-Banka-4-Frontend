@@ -169,18 +169,19 @@ export default function ClientRecipients() {
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   useLayoutEffect(() => {
+    if (loading || recipients.length === 0) return;
     const ctx = gsap.context(() => {
       gsap.from('.rec-item', { opacity: 0, y: 16, duration: 0.4, stagger: 0.06, ease: 'power2.out' });
     }, pageRef);
     return () => ctx.revert();
-  }, []);
+  }, [loading, recipients]);
 
   async function loadRecipients() {
     setLoading(true);
     setLoadError('');
     try {
-      const res = await clientApi.getRecipients();
-      setRecipients(res?.data ?? []);
+      const res = await clientApi.getPayees();
+      setRecipients(Array.isArray(res) ? res : res?.data ?? []);
     } catch (err) {
       setLoadError('Greška pri učitavanju primalaca.');
     } finally {
@@ -192,15 +193,15 @@ export default function ClientRecipients() {
 
   async function handleSave(payload) {
     if (editTarget) {
-      await clientApi.updateRecipient(editTarget.id, payload);
+      await clientApi.updatePayee(editTarget.payee_id ?? editTarget.id, payload);
     } else {
-      await clientApi.createRecipient(payload);
+      await clientApi.createPayee(payload);
     }
     await loadRecipients();
   }
 
   async function handleDelete() {
-    await clientApi.deleteRecipient(deleteTarget.id);
+    await clientApi.deletePayee(deleteTarget.payee_id ?? deleteTarget.id);
     setDeleteTarget(null);
     await loadRecipients();
   }
@@ -232,7 +233,7 @@ export default function ClientRecipients() {
             <span></span>
           </div>
           {recipients.map(r => (
-            <div key={r.id} className={`rec-item ${rStyles.tableRow}`}>
+            <div key={r.payee_id ?? r.id} className={`rec-item ${rStyles.tableRow}`}>
               <span className={rStyles.recipientName}>{r.name}</span>
               <span className={rStyles.accountNumber}>
                 {formatAccountNumber(r.account_number)}

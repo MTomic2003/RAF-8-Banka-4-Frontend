@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import Alert from '../../components/ui/Alert';
 import styles from '../../pages/admin/CardsPage.module.css';
 
-const ACCOUNT_TYPE = {
-  PERSONAL: 'PERSONAL',
-  BUSINESS: 'BUSINESS',
-};
+function isBusinessAccount(acc) {
+  const type = (acc.account_type ?? acc.type ?? '').toUpperCase();
+  return type.includes('BUSINESS') || type.includes('POSLOVNI') || !!acc.company_name;
+}
 
 export default function CardRequestModal({
   open,
@@ -13,10 +13,9 @@ export default function CardRequestModal({
   onContinue,
   cards,
   selectedCard,
+  accounts = [],
 }) {
   const [form, setForm] = useState({
-    accountType: ACCOUNT_TYPE.PERSONAL,
-    accountName: '',
     accountNumber: '',
     makeCard: true,
     authorizedFirstName: '',
@@ -28,42 +27,30 @@ export default function CardRequestModal({
 
   useEffect(() => {
     if (!open) return;
-
     setForm({
-      accountType: ACCOUNT_TYPE.PERSONAL,
-      accountName: selectedCard?.accountName || '',
-      accountNumber: selectedCard?.accountNumber || '',
+      accountNumber: accounts[0]?.account_number ?? accounts[0]?.number ?? selectedCard?.accountNumber ?? '',
       makeCard: true,
       authorizedFirstName: '',
       authorizedLastName: '',
       authorizedJmbg: '',
     });
     setError(null);
-  }, [open, selectedCard]);
+  }, [open, selectedCard, accounts]);
 
-  const personalCardsForAccount = useMemo(() => {
-    if (!form.accountNumber) return 0;
-    return cards.filter((card) => card.accountNumber === form.accountNumber).length;
+  // Check card limit for selected account
+  const selectedAccount = useMemo(() => {
+    return accounts.find(a => (a.account_number ?? a.number) === form.accountNumber);
+  }, [accounts, form.accountNumber]);
+
+  const isBusiness = selectedAccount ? isBusinessAccount(selectedAccount) : false;
+
+  const cardsForAccount = useMemo(() => {
+    return cards.filter(c => (c.accountNumber ?? c.account_number) === form.accountNumber);
   }, [cards, form.accountNumber]);
 
-  const businessCardsForAuthorized = useMemo(() => {
-    if (!form.accountNumber || !form.authorizedJmbg) return 0;
-
-    return cards.filter(
-      (card) =>
-        card.accountNumber === form.accountNumber &&
-        card.authorizedJmbg &&
-        card.authorizedJmbg === form.authorizedJmbg
-    ).length;
-  }, [cards, form.accountNumber, form.authorizedJmbg]);
-
-  const personalLimitReached =
-    form.accountType === ACCOUNT_TYPE.PERSONAL && personalCardsForAccount >= 2;
-
-  const businessLimitReached =
-    form.accountType === ACCOUNT_TYPE.BUSINESS &&
-    form.authorizedJmbg &&
-    businessCardsForAuthorized >= 1;
+  const maxReached = isBusiness
+    ? false // business: 1 per authorized person — validated by backend
+    : cardsForAccount.length >= 2; // personal: max 2
 
   function updateField(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -78,38 +65,36 @@ export default function CardRequestModal({
       return;
     }
 
-    if (!form.accountName.trim() || !form.accountNumber.trim()) {
-      setError('Naziv i broj računa su obavezni.');
+    if (!form.accountNumber.trim()) {
+      setError('Izaberite račun.');
       return;
     }
 
-    if (form.accountType === ACCOUNT_TYPE.PERSONAL && personalLimitReached) {
-      setError('Dostignut limit');
+    if (maxReached) {
+      setError('Ovaj račun već ima maksimalan broj kartica (2).');
       return;
     }
 
-    if (form.accountType === ACCOUNT_TYPE.BUSINESS) {
-      if (
-        !form.authorizedFirstName.trim() ||
-        !form.authorizedLastName.trim() ||
-        !form.authorizedJmbg.trim()
-      ) {
-        setError('Za poslovni račun unesite podatke za ovlašćeno lice.');
+    if (isBusiness) {
+      if (!form.authorizedFirstName.trim() || !form.authorizedLastName.trim()) {
+        setError('Unesite ime i prezime ovlašćenog lica.');
         return;
       }
-
-      if (!/^\d{13}$/.test(form.authorizedJmbg.trim())) {
-        setError('JMBG mora imati 13 cifara.');
-        return;
-      }
-
-      if (businessLimitReached) {
-        setError('Za ovo ovlašćeno lice već postoji kartica na ovom računu.');
+      const jmbgDigits = form.authorizedJmbg.replace(/\D/g, '');
+      if (jmbgDigits.length !== 13) {
+        setError('JMBG ovlašćenog lica mora imati tačno 13 cifara.');
         return;
       }
     }
 
-    onContinue(form);
+    const payload = {
+      ...form,
+      authorizedPerson: isBusiness
+        ? `${form.authorizedFirstName.trim()} ${form.authorizedLastName.trim()}`
+        : undefined,
+    };
+
+    onContinue(payload);
   }
 
   if (!open) return null;
@@ -121,10 +106,9 @@ export default function CardRequestModal({
           <div>
             <h3 className={styles.modalTitle}>Zatraži novu karticu</h3>
             <p className={styles.modalText}>
-              Popunite podatke, zatim potvrđujete zahtev kroz 2FA kod.
+              Izaberite račun i potvrdite zahtev kroz 2FA kod.
             </p>
           </div>
-
           <button type="button" className={styles.closeIconButton} onClick={onClose}>
             ×
           </button>
@@ -135,32 +119,33 @@ export default function CardRequestModal({
 
           <div className={styles.modalGrid}>
             <label className={styles.field}>
-              <span>Tip računa</span>
-              <select
-                value={form.accountType}
-                onChange={(e) => updateField('accountType', e.target.value)}
-              >
-                <option value={ACCOUNT_TYPE.PERSONAL}>Lični račun</option>
-                <option value={ACCOUNT_TYPE.BUSINESS}>Poslovni račun</option>
-              </select>
-            </label>
-
-            <label className={styles.field}>
-              <span>Naziv računa</span>
-              <input
-                type="text"
-                value={form.accountName}
-                onChange={(e) => updateField('accountName', e.target.value)}
-              />
-            </label>
-
-            <label className={styles.field}>
-              <span>Broj računa</span>
-              <input
-                type="text"
-                value={form.accountNumber}
-                onChange={(e) => updateField('accountNumber', e.target.value)}
-              />
+              <span>Račun</span>
+              {accounts.length > 0 ? (
+                <select
+                  value={form.accountNumber}
+                  onChange={(e) => updateField('accountNumber', e.target.value)}
+                >
+                  <option value="">Izaberite račun...</option>
+                  {accounts.map(acc => {
+                    const num = acc.account_number ?? acc.number;
+                    const accCards = cards.filter(c => (c.accountNumber ?? c.account_number) === num);
+                    const accIsBusiness = isBusinessAccount(acc);
+                    const accMaxed = !accIsBusiness && accCards.length >= 2;
+                    return (
+                      <option key={num} value={num} disabled={accMaxed}>
+                        {acc.name ?? 'Račun'} — {num} {accMaxed ? '(max kartica)' : ''}
+                      </option>
+                    );
+                  })}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  placeholder="Broj računa"
+                  value={form.accountNumber}
+                  onChange={(e) => updateField('accountNumber', e.target.value)}
+                />
+              )}
             </label>
           </div>
 
@@ -173,59 +158,52 @@ export default function CardRequestModal({
             <span>Napravi karticu</span>
           </label>
 
-          {form.accountType === ACCOUNT_TYPE.PERSONAL && personalLimitReached && (
+          {maxReached && (
             <p className={styles.disabledNote}>
-              Dugme „Zatraži novu” je onemogućeno — <strong>Dostignut limit</strong>.
+              Lični račun može imati najviše 2 kartice. Ovaj račun je dostigao limit.
             </p>
           )}
 
-          {form.accountType === ACCOUNT_TYPE.BUSINESS && (
-            <div className={styles.modalGrid}>
+          {isBusiness && (
+            <>
+              <div className={styles.modalGrid}>
+                <label className={styles.field}>
+                  <span>Ime ovlašćenog lica</span>
+                  <input
+                    type="text"
+                    placeholder="Ime"
+                    value={form.authorizedFirstName}
+                    onChange={(e) => updateField('authorizedFirstName', e.target.value)}
+                  />
+                </label>
+                <label className={styles.field}>
+                  <span>Prezime ovlašćenog lica</span>
+                  <input
+                    type="text"
+                    placeholder="Prezime"
+                    value={form.authorizedLastName}
+                    onChange={(e) => updateField('authorizedLastName', e.target.value)}
+                  />
+                </label>
+              </div>
               <label className={styles.field}>
-                <span>Ovlašćeno lice — Ime</span>
+                <span>JMBG ovlašćenog lica</span>
                 <input
                   type="text"
-                  value={form.authorizedFirstName}
-                  onChange={(e) => updateField('authorizedFirstName', e.target.value)}
-                />
-              </label>
-
-              <label className={styles.field}>
-                <span>Ovlašćeno lice — Prezime</span>
-                <input
-                  type="text"
-                  value={form.authorizedLastName}
-                  onChange={(e) => updateField('authorizedLastName', e.target.value)}
-                />
-              </label>
-
-              <label className={styles.field}>
-                <span>Ovlašćeno lice — JMBG</span>
-                <input
-                  type="text"
+                  maxLength={13}
+                  placeholder="0000000000000"
                   value={form.authorizedJmbg}
-                  onChange={(e) => updateField('authorizedJmbg', e.target.value)}
+                  onChange={(e) => updateField('authorizedJmbg', e.target.value.replace(/\D/g, ''))}
                 />
               </label>
-            </div>
-          )}
-
-          {form.accountType === ACCOUNT_TYPE.BUSINESS && businessLimitReached && (
-            <p className={styles.disabledNote}>
-              Za ovo ovlašćeno lice već postoji kartica na ovom računu.
-            </p>
+            </>
           )}
 
           <div className={styles.modalActions}>
             <button type="button" className={styles.btnGhost} onClick={onClose}>
               Otkaži
             </button>
-
-            <button
-              type="submit"
-              className={styles.btnPrimary}
-              disabled={personalLimitReached || businessLimitReached}
-            >
+            <button type="submit" className={styles.btnPrimary} disabled={maxReached}>
               Potvrdi zahtev
             </button>
           </div>

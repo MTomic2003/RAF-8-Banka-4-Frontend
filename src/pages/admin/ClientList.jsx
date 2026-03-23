@@ -17,6 +17,7 @@ export default function ClientList() {
     email:      '',
     first_name: '',
     last_name:  '',
+    jmbg:       '',
   });
   const [page, setPage] = useState(1);
   const pageSize = 20;
@@ -24,6 +25,7 @@ export default function ClientList() {
   const debouncedEmail     = useDebounce(filters.email,      400);
   const debouncedFirstName = useDebounce(filters.first_name, 400);
   const debouncedLastName  = useDebounce(filters.last_name,  400);
+  const debouncedJmbg      = useDebounce(filters.jmbg,       400);
 
   const { data, loading, error } = useFetch(
     () => {
@@ -31,9 +33,10 @@ export default function ClientList() {
       if (debouncedEmail)     params.email      = debouncedEmail;
       if (debouncedFirstName) params.first_name = debouncedFirstName;
       if (debouncedLastName)  params.last_name  = debouncedLastName;
+      if (debouncedJmbg)      params.jmbg       = debouncedJmbg;
       return clientsApi.getAll(params);
     },
-    [debouncedEmail, debouncedFirstName, debouncedLastName, page]
+    [debouncedEmail, debouncedFirstName, debouncedLastName, debouncedJmbg, page]
   );
 
   useLayoutEffect(() => {

@@ -1,5 +1,6 @@
 import { useRef, useLayoutEffect } from 'react';
 import gsap from 'gsap';
+import LoanStatusBadge from './LoanStatusBadge';
 import styles from './LoanList.module.css';
 
 export default function LoanList({ loans, selectedId, onSelectLoan }) {
@@ -17,11 +18,24 @@ export default function LoanList({ loans, selectedId, onSelectLoan }) {
     return () => ctx.revert();
   }, []);
 
-  // Requirement 1: Inicijalno sortirati listu opadajuće prema ukupnom iznosu kredita
-  const sortedLoans = [...loans].sort((a, b) => b.total_amount - a.total_amount);
+  const sortedLoans = [...loans].sort((a, b) => (b.amount ?? 0) - (a.amount ?? 0));
 
-  const formatCurrency = (amount) => 
-    new Intl.NumberFormat('sr-RS', { minimumFractionDigits: 2 }).format(amount);
+  const formatCurrency = (amount) =>
+    amount != null
+      ? new Intl.NumberFormat('sr-RS', { minimumFractionDigits: 2 }).format(amount)
+      : '—';
+
+  const LOAN_TYPE_LABELS = {
+    CASH: 'Keš kredit',
+    AUTO: 'Auto kredit',
+    MORTGAGE: 'Stambeni kredit',
+  };
+
+  function loanDisplayName(loan) {
+    const typeName = LOAN_TYPE_LABELS[loan.loan_type] ?? loan.loan_type ?? loan.name ?? `Kredit #${loan.id}`;
+    const currency = loan.currency ?? '';
+    return currency ? `${typeName} u ${currency}` : typeName;
+  }
 
   return (
     <div ref={ref} className={styles.listContainer}>
@@ -32,18 +46,26 @@ export default function LoanList({ loans, selectedId, onSelectLoan }) {
           onClick={() => onSelectLoan(loan)}
         >
           <div className={styles.cardHeader}>
-            <span className={styles.loanName}>{loan.name}</span>
-            <span className={styles.statusBadge}>{loan.status}</span>
+            <span className={styles.loanName}>{loanDisplayName(loan)}</span>
+            <LoanStatusBadge status={loan.status} />
           </div>
-          
+
           <div className={styles.cardBody}>
-            <p className={styles.idLabel}>Broj ugovora: <strong>{loan.id}</strong></p>
+            <p className={styles.idLabel}>Broj partije: <strong>{loan.contract_number ?? loan.id}</strong></p>
             <div className={styles.amountWrapper}>
-              <span className={styles.label}>Početni iznos</span>
+              <span className={styles.label}>Ukupna cifra</span>
               <span className={styles.amount}>
-                {formatCurrency(loan.total_amount)} {loan.currency}
+                {formatCurrency(loan.amount)} {loan.currency ?? ''}
               </span>
             </div>
+            {loan.monthly_installment != null && (
+              <div className={styles.amountWrapper}>
+                <span className={styles.label}>Mesečna rata</span>
+                <span className={styles.amount}>
+                  {formatCurrency(loan.monthly_installment)} {loan.currency ?? ''}
+                </span>
+              </div>
+            )}
           </div>
 
           <div className={styles.selectionIndicator}></div>
