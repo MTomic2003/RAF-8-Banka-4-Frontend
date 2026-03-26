@@ -1,3 +1,5 @@
+import { useState, useEffect } from 'react';
+import { companiesApi } from '../../api/endpoints/companies';
 import styles from './AccountForm.module.css';
 
 export const ACCOUNT_TYPES = [
@@ -37,8 +39,18 @@ export const ACCOUNT_CATEGORIES = [
 ];
 
 
-export default function AccountForm({ form, onChange, errors }) {
+const isBusiness = (category) => category?.startsWith('poslovni');
+
+export default function AccountForm({ form, onChange, errors, companyData, onCompanyChange, companyErrors }) {
   const currencies = form.account_type ? CURRENCIES[form.account_type] : [];
+
+  const [workCodes, setWorkCodes] = useState([]);
+  useEffect(() => {
+    if (!isBusiness(form.category)) return;
+    companiesApi.getWorkCodes()
+      .then(res => setWorkCodes(Array.isArray(res) ? res : res?.data ?? []))
+      .catch(() => setWorkCodes([]));
+  }, [form.category]);
 
   const licni    = ACCOUNT_CATEGORIES.filter(c => c.group === 'Lični računi');
   const poslovni = ACCOUNT_CATEGORIES.filter(c => c.group === 'Poslovni računi');
@@ -141,6 +153,105 @@ export default function AccountForm({ form, onChange, errors }) {
           </div>
         </div>
       </div>
+
+      {isBusiness(form.category) && companyData && (
+        <div className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <div className={styles.sectionIcon}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" strokeWidth="2">
+                <rect x="2" y="7" width="20" height="14" rx="2"/>
+                <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+                <line x1="12" y1="12" x2="12" y2="16"/>
+                <line x1="10" y1="14" x2="14" y2="14"/>
+              </svg>
+            </div>
+            <span className={styles.sectionTitle}>Podaci o firmi</span>
+          </div>
+
+          <div className={styles.fieldGrid2}>
+            <div className={styles.field}>
+              <label className={styles.label}>
+                Naziv firme <span className={styles.required}>*</span>
+              </label>
+              <input
+                type="text"
+                placeholder="npr. Firma D.O.O."
+                value={companyData.company_name}
+                onChange={e => onCompanyChange('company_name', e.target.value)}
+                className={`${styles.input} ${companyErrors?.company_name ? styles.inputError : ''}`}
+              />
+              {companyErrors?.company_name && <span className={styles.greska}>{companyErrors.company_name}</span>}
+            </div>
+
+            <div className={styles.field}>
+              <label className={styles.label}>
+                Matični broj (MB) <span className={styles.required}>*</span>
+              </label>
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={8}
+                placeholder="12345678"
+                value={companyData.registration_number}
+                onChange={e => onCompanyChange('registration_number', e.target.value.replace(/\D/g, ''))}
+                className={`${styles.input} ${companyErrors?.registration_number ? styles.inputError : ''}`}
+              />
+              <span className={styles.fieldHint}>Tačno 8 cifara</span>
+              {companyErrors?.registration_number && <span className={styles.greska}>{companyErrors.registration_number}</span>}
+            </div>
+
+            <div className={styles.field}>
+              <label className={styles.label}>
+                PIB (poreski broj) <span className={styles.required}>*</span>
+              </label>
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={9}
+                placeholder="123456789"
+                value={companyData.pib}
+                onChange={e => onCompanyChange('pib', e.target.value.replace(/\D/g, ''))}
+                className={`${styles.input} ${companyErrors?.pib ? styles.inputError : ''}`}
+              />
+              <span className={styles.fieldHint}>Tačno 9 cifara</span>
+              {companyErrors?.pib && <span className={styles.greska}>{companyErrors.pib}</span>}
+            </div>
+
+            <div className={styles.field}>
+              <label className={styles.label}>
+                Šifra delatnosti <span className={styles.required}>*</span>
+              </label>
+              <select
+                value={companyData.work_code_id}
+                onChange={e => onCompanyChange('work_code_id', e.target.value)}
+                className={`${styles.select} ${companyErrors?.work_code_id ? styles.inputError : ''}`}
+              >
+                <option value="">Izaberite šifru delatnosti...</option>
+                {workCodes.map(wc => (
+                  <option key={wc.id ?? wc.ID} value={wc.id ?? wc.ID}>
+                    {wc.code ?? wc.Code} — {wc.description ?? wc.Description ?? wc.name ?? wc.Name}
+                  </option>
+                ))}
+              </select>
+              {companyErrors?.work_code_id && <span className={styles.greska}>{companyErrors.work_code_id}</span>}
+            </div>
+
+            <div className={`${styles.field}`} style={{ gridColumn: '1 / -1' }}>
+              <label className={styles.label}>
+                Adresa <span className={styles.required}>*</span>
+              </label>
+              <input
+                type="text"
+                placeholder="npr. Trg Republike V/5, Beograd, Srbija"
+                value={companyData.address}
+                onChange={e => onCompanyChange('address', e.target.value)}
+                className={`${styles.input} ${companyErrors?.address ? styles.inputError : ''}`}
+              />
+              {companyErrors?.address && <span className={styles.greska}>{companyErrors.address}</span>}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className={styles.section}>
         <div className={styles.sectionHeader}>
