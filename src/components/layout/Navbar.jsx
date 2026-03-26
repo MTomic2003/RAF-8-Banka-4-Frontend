@@ -68,21 +68,23 @@ export default function Navbar() {
             </NavLink>
           )}
 
-          <NavLink
-            to="/clients"
-            className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
-          >
-            Klijenti
-          </NavLink>
+          {can('admin.clients') && (
+            <NavLink
+              to="/clients"
+              className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
+            >
+              Klijenti
+            </NavLink>
+          )}
 
-          <NavLink
-            to="/loans"
-            className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
-          >
-            Krediti
-          </NavLink>
-
-
+          {can('admin.loans') && (
+            <NavLink
+              to="/loans"
+              className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
+            >
+              Krediti
+            </NavLink>
+          )}
 
           <NavLink
             to="/payments"
@@ -91,13 +93,14 @@ export default function Navbar() {
           Plaćanja
           </NavLink>
 
-
-          <NavLink
-            to="/cards"
-            className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
-          >
-            Kartice
-          </NavLink>
+          {can('admin.cards') && (
+            <NavLink
+              to="/cards"
+              className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
+            >
+              Kartice
+            </NavLink>
+          )}
 
 
 

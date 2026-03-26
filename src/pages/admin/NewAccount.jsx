@@ -3,6 +3,7 @@ import { useNavigate }                        from 'react-router-dom';
 import gsap                                   from 'gsap';
 import { accountsApi }                        from '../../api/endpoints/accounts';
 import { clientsApi }                         from '../../api/endpoints/clients';
+import { useAuthStore }                       from '../../store/authStore';
 import { jeObavezno, jeValidanEmail }         from '../../utils/helpers';
 import Navbar                                 from '../../components/layout/Navbar';
 import Alert                                  from '../../components/ui/Alert';
@@ -20,6 +21,7 @@ export const CURRENCIES_BY_TYPE = {
 export default function NewAccount() {
   const navigate = useNavigate();
   const pageRef  = useRef(null);
+  const user     = useAuthStore(s => s.user);
 
   const [searchStatus,   setSearchStatus]   = useState('idle');
 
@@ -173,16 +175,46 @@ export default function NewAccount() {
         clientId = created?.data?.id ?? created?.id;
       }
 
-      await accountsApi.create({
+      // Calculate expiration date (+5 years)
+      const expiresAt = new Date();
+      expiresAt.setFullYear(expiresAt.getFullYear() + 5);
+
+      const isBusiness = accountData.category.startsWith('poslovni');
+      const accountTypeStr = isBusiness ? 'Business' : 'Personal';
+      const accountKindStr = accountData.account_type === 'tekuci' ? 'Current' : 'Foreign';
+
+      // Map subtype exactly to Go constants
+      const subtypeMap = {
+        'licni_standardni':   'Standard',
+        'licni_stedni':       'Savings',
+        'licni_penzionerski': 'Pension',
+        'licni_mladi':        'Student',
+        'poslovni_doo':       'LLC',
+        'poslovni_ad':        'JointStock',
+        'poslovni_fondacija': 'Foundation'
+      };
+      const subtypeStr = subtypeMap[accountData.category] || 'Standard';
+
+      const employeeId = user?.employee_id || user?.id || 0;
+
+      let apiPayload = {
         client_id:       clientId,
-        account_type:    accountData.account_type,
-        currency:        accountData.currency,
-        category:        accountData.category,
+        employee_id:     employeeId,
+        account_type:    accountTypeStr,
+        account_kind:    accountKindStr,
+        subtype:         subtypeStr,
         initial_balance: Number(accountData.initial_balance),
-        daily_limit:     Number(accountData.daily_limit),
-        monthly_limit:   Number(accountData.monthly_limit),
         create_card:     accountData.create_card,
-      });
+        generate_card:   accountData.create_card,
+        name:            accountKindStr === 'Current' ? 'Tekući račun RSD' : `Devizni račun ${accountData.currency}`,
+        expires_at:      expiresAt.toISOString(),
+      };
+
+      if (accountKindStr === 'Foreign') {
+        apiPayload.currency_code = accountData.currency || 'EUR';
+      }
+
+      await accountsApi.create(apiPayload);
 
       setSuccessMessage('Račun je uspešno kreiran!');
       window.scrollTo({ top: 0, behavior: 'smooth' });
