@@ -6,11 +6,12 @@ import { useFetch } from '../../hooks/useFetch';
 import Spinner from '../../components/ui/Spinner';
 import styles from './ClientTransferHistory.module.css';
 
-function formatAmount(amount, currency = 'RSD') {
-  return (
-    new Intl.NumberFormat('sr-RS', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-      .format(Math.abs(amount ?? 0)) + ' ' + currency
-  );
+function formatAmount(amount, currency = '') {
+  const formatted = new Intl.NumberFormat('sr-RS', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Math.abs(amount ?? 0));
+  return currency ? `${formatted} ${currency}` : formatted;
 }
 
 function formatDateTime(dateStr) {
@@ -23,22 +24,9 @@ function formatDateTime(dateStr) {
   );
 }
 
-const STATUS_MAP = {
-  COMPLETED:   { label: 'Završen',    cls: 'badgeGreen' },
-  SUCCESS:     { label: 'Završen',    cls: 'badgeGreen' },
-  completed:   { label: 'Završen',    cls: 'badgeGreen' },
-  PENDING:     { label: 'Na čekanju', cls: 'badgeAmber' },
-  pending:     { label: 'Na čekanju', cls: 'badgeAmber' },
-  IN_PROGRESS: { label: 'U obradi',   cls: 'badgeAmber' },
-  processing:  { label: 'U obradi',   cls: 'badgeAmber' },
-  REJECTED:    { label: 'Odbijen',    cls: 'badgeRed'   },
-  FAILED:      { label: 'Neuspešan',  cls: 'badgeRed'   },
-  failed:      { label: 'Neuspešan',  cls: 'badgeRed'   },
-};
-
-function StatusBadge({ status }) {
-  const s = STATUS_MAP[status] ?? { label: status ?? '—', cls: 'badgeGray' };
-  return <span className={`${styles.badge} ${styles[s.cls]}`}>{s.label}</span>;
+function shortAccount(num) {
+  if (!num) return '—';
+  return `••••${String(num).slice(-4)}`;
 }
 
 export default function ClientTransferHistory() {
@@ -52,18 +40,18 @@ export default function ClientTransferHistory() {
   const [showPaymentsMenu,  setShowPaymentsMenu]  = useState(false);
   const PAGE_SIZE = 20;
 
-  // ── Ispravan endpoint: /clients/{clientId}/transfers ──
   const { data, loading, error } = useFetch(
     () => transfersApi.getHistory(clientId, { page, page_size: PAGE_SIZE }),
     [clientId, page]
   );
 
+  // API vraća { data: [...], total, page, total_pages }
   const rawTransfers = data?.data ?? (Array.isArray(data) ? data : []);
   const totalPages   = data?.total_pages ?? 0;
 
-  // Sortiraj od najnovijeg ka najstarijem
+  // Sortiraj od najnovijeg ka najstarijem po created_at
   const transfers = [...rawTransfers].sort((a, b) =>
-    new Date(b.date ?? b.created_at ?? 0) - new Date(a.date ?? a.created_at ?? 0)
+    new Date(b.created_at ?? 0) - new Date(a.created_at ?? 0)
   );
 
   function handleLogout() { logout(); navigate('/login'); }
@@ -203,31 +191,33 @@ export default function ClientTransferHistory() {
                   <thead>
                     <tr>
                       <th>Datum i vreme</th>
-                      <th>Svrha</th>
                       <th>Sa računa</th>
                       <th>Na račun</th>
-                      <th style={{ textAlign: 'center' }}>Status</th>
-                      <th style={{ textAlign: 'right' }}>Iznos</th>
+                      <th style={{ textAlign: 'right' }}>Poslato</th>
+                      <th style={{ textAlign: 'right' }}>Primljeno</th>
+                      <th style={{ textAlign: 'right' }}>Provizija</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {transfers.map((tx, i) => (
-                      <tr key={tx.id ?? tx.transfer_id ?? i}>
-                        <td className={styles.tdDate}>{formatDateTime(tx.date ?? tx.created_at)}</td>
-                        <td><div className={styles.tdDesc}>{tx.purpose ?? tx.description ?? '—'}</div></td>
-                        <td className={styles.tdAccount}>
-                          {tx.from_account
-                            ? `••••${String(tx.from_account).slice(-4)}`
-                            : '—'}
+                    {transfers.map((tx) => (
+                      <tr key={tx.transfer_id ?? tx.transaction_id}>
+                        <td className={styles.tdDate}>
+                          {formatDateTime(tx.created_at)}
                         </td>
                         <td className={styles.tdAccount}>
-                          {tx.to_account
-                            ? `••••${String(tx.to_account).slice(-4)}`
-                            : '—'}
+                          {shortAccount(tx.from_account_number)}
                         </td>
-                        <td style={{ textAlign: 'center' }}><StatusBadge status={tx.status} /></td>
-                        <td className={styles.debit}>
-                          -{formatAmount(tx.amount, tx.currency)}
+                        <td className={styles.tdAccount}>
+                          {shortAccount(tx.to_account_number)}
+                        </td>
+                        <td className={styles.debit} style={{ textAlign: 'right' }}>
+                          -{formatAmount(tx.initial_amount)}
+                        </td>
+                        <td className={styles.credit} style={{ textAlign: 'right' }}>
+                          +{formatAmount(tx.final_amount)}
+                        </td>
+                        <td style={{ textAlign: 'right', color: 'var(--tx-3)', fontSize: 12 }}>
+                          {formatAmount(tx.commission)}
                         </td>
                       </tr>
                     ))}
