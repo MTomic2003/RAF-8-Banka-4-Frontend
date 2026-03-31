@@ -18,9 +18,5 @@ describe("Scenario 16: Korisnik bez admin permisija pokušava pristup admin port
         // 3) Sistem odbija pristup: najrealnije je redirect (npr. /dashboard ili /login)
         cy.location("pathname", { timeout: 20000 }).should("not.eq", "/admin");
 
-        // Ako tačno znaš gde preusmeri (najčešće /dashboard), koristi ovo:
-        // cy.location("pathname", { timeout: 20000 }).should("eq", "/dashboard");
-
-        // 4) Poruka (OVO će proći samo ako poruka stvarno postoji u UI-u)
     });
 });

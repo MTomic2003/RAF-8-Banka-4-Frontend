@@ -53,6 +53,5 @@ describe('Scenario 17: Admin dodeljuje permisije zaposlenom (Create & Delete)', 
 
         cy.contains('button[type="submit"]', 'Sačuvaj izmene').click();
 
-        // Čekamo potvrdu od servera
     });
 });

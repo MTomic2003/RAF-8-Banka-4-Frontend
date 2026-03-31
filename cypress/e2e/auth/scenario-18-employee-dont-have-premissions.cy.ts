@@ -64,7 +64,5 @@ describe('Scenario 18: Verifikacija praznih permisija za novog korisnika', () =>
             cy.get('.p-chip, .badge, .tag, .permission-item').should('not.exist');
         });
 
-        // Opciono: Možeš proveriti i da li negde piše "Nema dodeljenih permisija"
-        // cy.contains('Nema dodeljenih permisija').should('be.visible');
     });
 });
