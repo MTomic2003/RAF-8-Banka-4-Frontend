@@ -1,0 +1,260 @@
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.table thead tr {
+  border-bottom: 1.5px solid var(--border);
+  background: var(--surface-raised, var(--surface));
+}
+
+.table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tx-3);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.table tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background var(--transition);
+}
+
+.table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.table tbody tr:hover {
+  background: var(--surface-hover, rgba(27, 79, 216, 0.04));
+}
+
+.table td {
+  padding: 14px 16px;
+  color: var(--tx-1);
+  vertical-align: middle;
+}
+
+/* Name */
+.nameCell {
+  white-space: nowrap;
+}
+
+.name {
+  font-weight: 600;
+  color: var(--tx-1);
+}
+
+/* Email */
+.emailCell {
+  color: var(--tx-2);
+  font-size: 13px;
+}
+
+/* Amounts */
+.amountCell {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.amountOwed {
+  color: var(--red, #dc2626);
+  font-weight: 600;
+}
+
+.amountClear {
+  color: var(--tx-2);
+}
+
+.amountPaid {
+  color: var(--green, #16a34a);
+  font-weight: 500;
+}
+
+/* Team badge */
+.teamBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.teamKlijent {
+  background: rgba(27, 79, 216, 0.1);
+  color: var(--blue);
+}
+
+.teamAktuar {
+  background: rgba(124, 58, 237, 0.1);
+  color: #7c3aed;
+}
+
+/* Status badge */
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.statusPaid {
+  background: rgba(22, 163, 74, 0.1);
+  color: var(--green, #16a34a);
+}
+
+.statusUnpaid {
+  background: rgba(220, 38, 38, 0.1);
+  color: var(--red, #dc2626);
+}
+
+.statusNone {
+  background: rgba(100, 116, 139, 0.1);
+  color: var(--tx-3);
+}
+
+.statusPartial {
+  background: rgba(234, 88, 12, 0.1);
+  color: #ea580c;
+}
+
+/* Action button */
+.btnCalc {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 600;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--tx-1);
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+
+.btnCalc:hover {
+  border-color: var(--blue);
+  color: var(--blue);
+  background: rgba(27, 79, 216, 0.05);
+}
+
+/* Empty state */
+.empty {
+  padding: 48px 24px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--tx-3);
+}
+
+/* ── Expand rows ─────────────────────────────────────── */
+.mainRowClickable {
+  cursor: pointer;
+}
+
+.mainRowExpanded td {
+  background: var(--surface-raised, rgba(27, 79, 216, 0.03));
+}
+
+.table td.chevronCell {
+  width: 32px;
+  padding-left: 16px;
+}
+
+.chevron {
+  display: block;
+  color: var(--tx-3);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.table.table .expandRow td {
+  padding: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.expandCell {
+  background: var(--surface-raised, rgba(27, 79, 216, 0.02));
+}
+
+.expandContent {
+  padding: 16px 24px 24px 56px;
+}
+
+.accountsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.accountsTable thead tr {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.accountsTable th {
+  padding: 11px 16px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--tx-3);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.accountsTable td {
+  padding: 13px 16px;
+  color: var(--tx-1);
+  border-bottom: 1px solid var(--border);
+}
+
+.accountsTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.accNumber {
+  font-family: monospace;
+  font-size: 12px;
+  color: var(--tx-2);
+  letter-spacing: 0.03em;
+}
+
+.accountsTable .totalRow td {
+  background: rgba(27, 79, 216, 0.04);
+  font-weight: 600;
+  border-top: 1.5px solid var(--border);
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+
+.totalLabel {
+  color: var(--tx-1);
+  font-size: 13px;
+  font-weight: 600;
+}

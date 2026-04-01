@@ -90,7 +90,7 @@ export default function Navbar() {
             to="/payments"
             className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
           >
-          Plaćanja
+            Plaćanja
           </NavLink>
 
           {can('admin.cards') && (
@@ -122,6 +122,12 @@ export default function Navbar() {
             </NavLink>
           )}
 
+          {can('isSuperAdmin') && (
+            <NavLink
+              to="/tax"
+              className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
+            >
+              Porez
           {can('employee.view') && (
             <NavLink
               to="/portfolio"
@@ -187,11 +193,7 @@ export default function Navbar() {
                 </div>
               )}
             </div>
-            
           )}
-
-
-
         </div>
 
         <div className={styles.right}>

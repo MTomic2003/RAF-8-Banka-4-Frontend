@@ -1,0 +1,195 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 24px;
+  backdrop-filter: blur(2px);
+}
+
+.modal {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg, 0 24px 64px rgba(0, 0, 0, 0.18));
+  padding: 32px;
+  width: 100%;
+  max-width: 460px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: modalIn 0.2s ease;
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to   { opacity: 1; transform: scale(1)   translateY(0);    }
+}
+
+/* Icon */
+.iconWrap {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius);
+  background: rgba(27, 79, 216, 0.1);
+  color: var(--blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Title */
+.title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--tx-1);
+  letter-spacing: -0.3px;
+  margin: 0;
+}
+
+/* User chip */
+.userChip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface-raised, rgba(100, 116, 139, 0.07));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+}
+
+.userChipName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--tx-1);
+}
+
+.userChipEmail {
+  font-size: 13px;
+  color: var(--tx-3);
+}
+
+/* Description */
+.desc {
+  font-size: 14px;
+  color: var(--tx-2);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Formula box */
+.formula {
+  background: var(--surface-raised, rgba(100, 116, 139, 0.06));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formulaRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--tx-1);
+}
+
+.formulaRow span:first-child {
+  color: var(--tx-2);
+  font-weight: 500;
+  min-width: 52px;
+}
+
+.formulaRow strong {
+  color: var(--blue);
+}
+
+.formulaNote {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--tx-3);
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+
+/* Actions */
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.btnCancel {
+  height: 40px;
+  padding: 0 16px;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--tx-2);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.btnCancel:hover:not(:disabled) {
+  border-color: var(--tx-2);
+  color: var(--tx-1);
+}
+
+.btnCancel:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btnConfirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 40px;
+  padding: 0 18px;
+  border-radius: var(--radius);
+  border: none;
+  background: var(--blue);
+  color: #fff;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+  box-shadow: 0 2px 8px rgba(27, 79, 216, 0.25);
+  white-space: nowrap;
+}
+
+.btnConfirm:hover:not(:disabled) {
+  background: var(--navy-mid);
+  box-shadow: 0 4px 16px rgba(27, 79, 216, 0.35);
+  transform: translateY(-1px);
+}
+
+.btnConfirm:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Spinner */
+.spinner {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
