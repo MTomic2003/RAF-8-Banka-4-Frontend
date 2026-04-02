@@ -7,10 +7,12 @@ on:
 
 jobs:
   end-to-end:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Check out ${{ github.ref }} after a ${{ github.event_name }} event
         uses: actions/checkout@v6
 
       - name: Run Cypress
-        uses: cypress-io/github-action@7
+        uses: cypress-io/github-action@v7
+        with:
+          start: npm run dev
