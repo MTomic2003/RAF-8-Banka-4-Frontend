@@ -85,6 +85,32 @@ function mapForex(s) {
   };
 }
 
+function mapOptionBase(s) {
+  return {
+    id:               s.listing_id,
+    type:             'OPTION',
+    ticker:           s.ticker,
+    name:             s.name,
+    exchange:         s.exchange ?? '',
+    price:            s.price,
+    change:           s.change,
+    changePercent:    null,
+    volume:           s.volume,
+    bid:              s.bid,
+    ask:              s.ask,
+    maintenanceMargin: s.maintenance_margin,
+    initialMarginCost: s.initial_margin_cost,
+    
+    // Specifična polja za opcije:
+    strike:           s.strike,
+    openInterest:     s.open_interest,
+    settlementDate:   s.settlement_date,
+    optionType:       s.option_type,
+    impliedVolatility: s.implied_volatility,
+    history:          s.history ?? null,
+  };
+}
+
 function mapOptionRaw(o) {
   return {
     listing_id:         o.listing_id,
@@ -137,6 +163,7 @@ function attachHistory(mapped, history) {
       '1W': pts.slice(-7),
       '1M': pts.slice(-30),
       '1Y': pts.slice(-365),
+      '5Y': pts.slice(-1825),
     },
   };
 }
@@ -171,8 +198,16 @@ export const securitiesApi = {
     });
   },
 
-  getStockById(id) {
-    return api.get(`/listings/stock/${id}`).then(res => {
+  getOptions(params = {}) {
+    return api.get('/listings/options', { params }).then(res => {
+      const parsed = unpack(res);
+      const list = Array.isArray(parsed) ? parsed : parsed?.data ?? [];
+      return list.map(mapOptionBase);
+    });
+  },
+
+  getStockById(id, daysBack = 1825) {
+    return api.get(`/listings/stock/${id}`, { params: { days_back: daysBack } }).then(res => {
       const s = unpack(res);
       const mapped = mapStock(s);
       const withHistory = attachHistory(mapped, s.history);
@@ -183,31 +218,38 @@ export const securitiesApi = {
     });
   },
 
-  getFuturesById(id) {
-    return api.get(`/listings/futures/${id}`).then(res => {
+  getFuturesById(id, daysBack = 1825) {
+    return api.get(`/listings/futures/${id}`, { params: { days_back: daysBack } }).then(res => {
       const s = unpack(res);
       return attachHistory(mapFutures(s), s.history);
     });
   },
 
-  getForexById(id) {
-    return api.get(`/listings/forex/${id}`).then(res => {
+  getForexById(id, daysBack = 1825) {
+    return api.get(`/listings/forex/${id}`, { params: { days_back: daysBack } }).then(res => {
       const s = unpack(res);
       return attachHistory(mapForex(s), s.history);
     });
   },
 
+  getOptionById(id, daysBack = 1825) {
+    return api.get(`/listings/options/${id}`, { params: { days_back: daysBack } }).then(res => {
+      const s = unpack(res);
+      return attachHistory(mapOptionBase(s), s.history);
+    });
+  },
+
   buy(data) {
   return api.post('/orders', {
-    account_number: data.accountNumber,   
+    account_number: data.accountNumber,
     listing_id:     data.listingId,
-    direction:      'BUY',               
-    order_type:     'MARKET',            
+    direction:      'BUY',
+    order_type:     data.orderType ?? 'MARKET',
     quantity:       data.quantity,
     all_or_none:    false,
     margin:         false,
-    limit_value:    0,
-    stop_value:     0,
+    limit_value:    data.limitValue ?? 0,
+    stop_value:     data.stopValue  ?? 0,
   });
 }
 };
